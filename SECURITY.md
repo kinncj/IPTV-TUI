@@ -2,15 +2,18 @@
 
 ## Reporting a vulnerability
 
-Report suspected vulnerabilities privately. Do not open a public issue for a
-security problem.
+Report suspected vulnerabilities through GitHub, so the report stays with the
+project. Do not disclose a security problem in a way that exposes users before a
+fix.
 
-- Use GitHub's private advisory form: https://github.com/kinncj/IPTV-TUI/security/advisories/new
-- Or email kinncj@gmail.com with "IPTV TUI security" in the subject.
+- Preferred (private): GitHub's private advisory form,
+  https://github.com/kinncj/IPTV-TUI/security/advisories/new
+- Otherwise: open a GitHub issue at
+  https://github.com/kinncj/IPTV-TUI/issues, and leave out any exploit detail
+  that would put users at risk until it is fixed.
 
 Please include what you found, the steps to reproduce it, and the version
-(`iptv-tui -version`). You will get an acknowledgement, and a fix or a decision
-once the report is assessed.
+(`iptv-tui -version`). You will get a response once the report is assessed.
 
 ## Scope
 

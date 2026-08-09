@@ -31,9 +31,10 @@ Maintainers are responsible for clarifying these standards and may remove,
 edit, or reject contributions that do not follow them, and may ban contributors
 for behavior they consider inappropriate.
 
-Report unacceptable behavior to kinncj@gmail.com. Reports are handled
-confidentially. The maintainer will review each report and respond as they judge
-appropriate.
+Report unacceptable behavior by opening a GitHub issue at
+https://github.com/kinncj/IPTV-TUI/issues. Include what happened and any
+evidence, such as screenshots or links. The maintainer will review each report
+and respond as they judge appropriate.
 
 ## Attribution
 

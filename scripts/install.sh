@@ -27,18 +27,21 @@ usage() {
   cat <<EOF
 Install IPTV TUI.
 
-Usage: install.sh [--install-location DIR]
+Usage: install.sh [--install-location DIR] [--install-deps]
 
   --install-location DIR   install into DIR (default: /usr/local/bin)
+  --install-deps           also install mpv and ffmpeg with your package manager
   -h, --help               show this help
 EOF
 }
 
 INSTALL_LOCATION=""
+INSTALL_DEPS=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --install-location) INSTALL_LOCATION="${2:-}"; shift 2 ;;
     --install-location=*) INSTALL_LOCATION="${1#*=}"; shift ;;
+    --install-deps) INSTALL_DEPS=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) err "unknown option: $1" ;;
   esac
@@ -130,9 +133,76 @@ if curl -fsSL "${base}/iptv-tui.1" -o "${tmp}/iptv-tui.1" 2>/dev/null; then
   fi
 fi
 
-echo
-if command -v mpv >/dev/null 2>&1 || command -v vlc >/dev/null 2>&1 || command -v ffplay >/dev/null 2>&1; then :; else
-  echo "note: no player found. Install mpv (recommended), vlc, or ffplay."
+# --- runtime dependencies --------------------------------------------------
+# The binary is static, but at runtime the app needs a player and ffmpeg:
+#   mpv     recommended player, and the audio for the built-in inline player
+#   ffmpeg  the built-in inline video player (and provides ffplay)
+detect_pm() {
+  if command -v brew >/dev/null 2>&1; then echo brew
+  elif command -v pacman >/dev/null 2>&1; then echo pacman
+  elif command -v dnf >/dev/null 2>&1; then echo dnf
+  elif command -v zypper >/dev/null 2>&1; then echo zypper
+  elif command -v apt-get >/dev/null 2>&1; then echo apt
+  elif command -v emerge >/dev/null 2>&1; then echo emerge
+  else echo ""; fi
+}
+
+install_cmd() { # <pm> <pkgs...>
+  pm="$1"; shift; pkgs="$*"
+  case "$pm" in
+    brew)   echo "brew install ${pkgs}" ;;
+    pacman) echo "sudo pacman -S --needed ${pkgs}" ;;
+    dnf)    echo "sudo dnf install ${pkgs}" ;;
+    zypper) echo "sudo zypper install ${pkgs}" ;;
+    apt)    echo "sudo apt-get update && sudo apt-get install -y ${pkgs}" ;;
+    emerge) atoms=""; for p in $pkgs; do atoms="${atoms} media-video/${p}"; done
+            echo "sudo emerge --ask${atoms}" ;;
+    *)      echo "" ;;
+  esac
+}
+
+pm_note() {
+  case "$1" in
+    dnf)    echo "  (Fedora: full ffmpeg may need RPM Fusion, https://rpmfusion.org)" ;;
+    zypper) echo "  (openSUSE: ffmpeg usually comes from the Packman repository)" ;;
+    emerge) echo "  (Gentoo: these compile from source and can take a while)" ;;
+  esac
+}
+
+have_player=0
+if command -v mpv >/dev/null 2>&1 || command -v vlc >/dev/null 2>&1 || command -v ffplay >/dev/null 2>&1; then
+  have_player=1
 fi
+have_ffmpeg=0
+command -v ffmpeg >/dev/null 2>&1 && have_ffmpeg=1
+
+missing=""
+[ "$have_player" = 0 ] && missing="mpv"
+[ "$have_ffmpeg" = 0 ] && missing="${missing:+$missing }ffmpeg"
+
+echo
+if [ -z "$missing" ]; then
+  echo "Runtime dependencies present."
+else
+  pm=$(detect_pm)
+  cmd=$(install_cmd "$pm" $missing)
+  echo "Runtime dependencies to install: ${missing}"
+  echo "  mpv     recommended player, plus audio for the built-in inline player"
+  echo "  ffmpeg  the built-in inline video player (and ffplay)"
+  if [ -n "$cmd" ] && [ "$INSTALL_DEPS" = 1 ] && [ "$pm" != emerge ]; then
+    echo "Installing: ${cmd}"
+    sh -c "$cmd" || echo "  install failed; run it yourself: ${cmd}"
+  elif [ -n "$cmd" ]; then
+    echo "Install them with:"
+    echo "  ${cmd}"
+    pm_note "$pm"
+    [ "$INSTALL_DEPS" = 1 ] && echo "  (skipped auto-install for this package manager; run the command above)"
+    echo "Or re-run with --install-deps to install automatically."
+  else
+    echo "Install mpv and ffmpeg with your system's package manager, then run iptv-tui."
+  fi
+fi
+
+echo
 echo "Done. Ensure ${bindir} is on your PATH."
 echo "Try:  iptv-tui        (or: man iptv-tui)"

@@ -14,7 +14,37 @@ ffplay). The playlists come from two independent community projects:
 This project is not affiliated with either, and is not responsible for the
 streams they list. See [DISCLAIMER.md](DISCLAIMER.md).
 
+![Home](assets/screenshots/home.png)
+
+Browse by country or category, with a live detail panel:
+
+![Channels](assets/screenshots/channels.png)
+
+Play in an external window, or inline in the terminal (the built-in player keeps
+the list visible behind it):
+
+![Player chooser](assets/screenshots/chooser.png)
+
 ## Install
+
+Any Linux or macOS, with the install script. It downloads the release binary to
+`/usr/local/bin` (using sudo only if that directory needs it), and can install
+the runtime dependencies (mpv and ffmpeg) for you:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kinncj/IPTV-TUI/main/scripts/install.sh | sh
+
+# also install mpv + ffmpeg with your package manager:
+curl -fsSL https://raw.githubusercontent.com/kinncj/IPTV-TUI/main/scripts/install.sh | sh -s -- --install-deps
+
+# install somewhere else (no sudo):
+curl -fsSL https://raw.githubusercontent.com/kinncj/IPTV-TUI/main/scripts/install.sh | sh -s -- --install-location ~/.local/bin
+```
+
+The script detects your package manager (pacman, apt, dnf, zypper, emerge, or
+brew), so it works on CachyOS/Arch/Omarchy, Fedora, Debian, Ubuntu, openSUSE,
+Gentoo, macOS, and WSL2. Without `--install-deps` it prints the exact command to
+install the dependencies yourself.
 
 Arch Linux (AUR):
 
@@ -22,16 +52,7 @@ Arch Linux (AUR):
 paru -S iptv-tui-bin     # prebuilt binary, installs to /usr/bin/iptv-tui
 ```
 
-Any Linux or macOS, with the install script (downloads the release binary to
-`/usr/local/bin`, using sudo only if that directory needs it):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/kinncj/IPTV-TUI/main/scripts/install.sh | sh
-# install somewhere else:
-curl -fsSL .../scripts/install.sh | sh -s -- --install-location ~/.local/bin
-```
-
-From source:
+From source (Go 1.26+):
 
 ```bash
 make tui/run                 # build ./iptv and run
@@ -39,8 +60,12 @@ make tui/run                 # build ./iptv and run
 make tui/build && ./iptv
 ```
 
-Requirements to build from source: Go 1.26+. For playback you need a player:
-mpv (recommended, and required for inline terminal playback), vlc, or ffplay.
+## Requirements
+
+- A player: mpv (recommended), vlc, or ffplay.
+- ffmpeg for the built-in inline video player (it also provides ffplay).
+
+The install script can set these up with `--install-deps`.
 
 ## Screens
 
@@ -52,6 +77,16 @@ mpv (recommended, and required for inline terminal playback), vlc, or ffplay.
   url).
 - Sources: an in-app manager to add or remove your own playlists.
 - Help: press `?` for the keybindings overlay.
+
+Countries, grouped and filterable:
+
+![Countries](assets/screenshots/countries.png)
+
+The in-app source manager and the help overlay:
+
+![Sources](assets/screenshots/sources.png)
+
+![Help](assets/screenshots/help.png)
 
 Each channel shows a reachability icon: `✓` reachable, `⚠` blocked (usually
 geo-blocked), `✗` dead, `…` checking. This is how you land on a working stream
