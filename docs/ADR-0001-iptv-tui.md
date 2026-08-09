@@ -1,11 +1,11 @@
-# ADR-0001 — IPTV browsing TUI
+# ADR-0001: IPTV browsing TUI
 
 ## Title
 A Go + Bubble Tea TUI to browse public IPTV playlists by country and launch a player.
 
 ## Context
-Two public playlists — iptv-org (exhaustive, ~15k channels, every country) and
-Free-TV (curated HD, ~2k) — are the practical source of free channels. Both group
+Two public playlists are the practical source of free channels: iptv-org
+(exhaustive, ~15k channels, every country) and Free-TV (curated HD, ~2k). Both group
 channels by country via `group-title`.
 
 The problem is not *finding* channels, it is that a large fraction of iptv-org
@@ -48,8 +48,8 @@ render, so probe updates surface without rebuilding the list.
 
 ## Alternatives
 1. **Static per-country `.m3u` files (the Python approach).** Rejected: no
-   reachability signal — leaves the actual problem unsolved.
-2. **Probe all ~17k channels at startup.** Rejected: slow, heavy, and wasteful —
+   reachability signal, which leaves the actual problem unsolved.
+2. Probe all ~17k channels at startup. Rejected: slow, heavy, and wasteful,
    most are never viewed. Lazy per-group probing costs a small burst instead.
 3. **Embed a player (libmpv/ffmpeg bindings).** Rejected for v1: large cgo
    surface and packaging cost; shelling out to a real player is simpler and lets
@@ -86,13 +86,13 @@ Adopt the layered Go + Bubble Tea TUI above. Retire the Python generator.
   `state.json`) surfaced as Favorites/Recent groups; **in-TUI source manager**
   (`s`, writes `iptv.local.json`, reloads); **EPG now/next overlay** in the
   detail card (`common/epg`, per-country XMLTV from epgshare01, size-guarded).
-- Done (v1.2): **iptv-org API ingestion** (`-api`, `common/iptvorg`) — opt-in,
+- Done (v1.2): iptv-org API ingestion (`-api`, `common/iptvorg`), opt-in,
   swaps only the built-in iptv-org M3U for the JSON API (stable IDs, categories,
   country names); user + Free-TV lists untouched. **Probe flags**
   (`-probe-concurrency`, `-probe-timeout`) and a batched **`-probe-all`**
   background sweep. **CI** (`.github/workflows/ci.yml` → `make ci` = lint +
   race tests + build). Built-in sources remain non-removable in the manager.
-- v1.3 (in progress): **category grouping** done — `g` toggles country↔category
+- v1.3 (in progress): category grouping done. `g` toggles country/category
   (`catalog.BuildByCategory` + `Flatten`, uses the API-ingested `Category`).
   **AUR release** prepared as **IPTV TUI**: AGPL-3.0, `iptv-tui` (source) +
   `iptv-tui-bin` (prebuilt, per-arch) under `packaging/aur/`, cross-compile via

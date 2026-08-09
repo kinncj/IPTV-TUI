@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kinncj/iptv/common/config"
+	"github.com/kinncj/IPTV-TUI/common/config"
 )
 
 // openSources builds the source list (built-ins + user config) and shows it.

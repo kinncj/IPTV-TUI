@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kinncj/iptv/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
 )
 
 func TestWriteRegeneratesPlaylists(t *testing.T) {

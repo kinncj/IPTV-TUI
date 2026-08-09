@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/kinncj/iptv/common/catalog"
-	"github.com/kinncj/iptv/common/player"
-	"github.com/kinncj/iptv/common/state"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/player"
+	"github.com/kinncj/IPTV-TUI/common/state"
 )
 
 type fakePlayer struct{ name string }

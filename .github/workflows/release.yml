@@ -1,0 +1,67 @@
+name: release
+
+# The maintainer publishes a GitHub Release; this workflow cross-compiles the
+# binaries and attaches them (idempotent: CI never creates the release). It can
+# also publish the AUR package once you opt in (see packaging/aur/README.md).
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Attach binaries to the release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Cross-compile binaries + man + LICENSE + SHA256SUMS
+        run: make release/build VERSION="${GITHUB_REF_NAME#v}"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/iptv-tui_linux_amd64
+            dist/iptv-tui_linux_arm64
+            dist/iptv-tui_darwin_amd64
+            dist/iptv-tui_darwin_arm64
+            dist/iptv-tui.1
+            dist/LICENSE
+            dist/SHA256SUMS
+            scripts/install.sh
+
+  aur:
+    name: Publish iptv-tui-bin to the AUR
+    runs-on: ubuntu-latest
+    needs: [publish]
+    # Inert until you opt in: set repo variable ENABLE_AUR=true and add the
+    # AUR_SSH_PRIVATE_KEY secret. See packaging/aur/README.md.
+    if: vars.ENABLE_AUR == 'true' && !github.event.release.prerelease
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate the -bin PKGBUILD from the release checksums
+        env:
+          VERSION: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          ver="${VERSION#v}"
+          curl -fsSL "https://github.com/${REPO}/releases/download/${VERSION}/SHA256SUMS" -o SHA256SUMS
+          SUMS=SHA256SUMS bash packaging/aur/gen-pkgbuild.sh "$ver"
+
+      - name: Publish to the AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
+        with:
+          pkgname: iptv-tui-bin
+          pkgbuild: packaging/aur/iptv-tui-bin/PKGBUILD
+          commit_username: ${{ github.actor }}
+          commit_email: kinncj@gmail.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update iptv-tui-bin to ${{ github.ref_name }}"
+          ssh_keyscan_types: rsa,ed25519

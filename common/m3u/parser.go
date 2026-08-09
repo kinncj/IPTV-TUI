@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kinncj/iptv/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
 )
 
 var attrRe = regexp.MustCompile(`([a-zA-Z0-9_-]+)="([^"]*)"`)

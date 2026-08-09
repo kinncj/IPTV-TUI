@@ -2,10 +2,10 @@
 pkgname=iptv-tui
 pkgver=1.3.0
 pkgrel=1
-pkgdesc="IPTV TUI — browse free IPTV playlists (iptv-org, Free-TV) by country/category and play them"
+pkgdesc="IPTV TUI, a terminal UI to browse free IPTV playlists (iptv-org, Free-TV) by country or category and play them"
 arch=('x86_64' 'aarch64')
-url="https://github.com/kinncj/iptv"
-license=('AGPL-3.0-or-later')
+url="https://github.com/kinncj/IPTV-TUI"
+license=('MIT')
 depends=('glibc')
 makedepends=('go>=1.26')
 optdepends=('mpv: inline terminal playback and best HLS support'
@@ -13,7 +13,7 @@ optdepends=('mpv: inline terminal playback and best HLS support'
             'ffmpeg: ffplay fallback player')
 provides=('iptv-tui')
 conflicts=('iptv-tui-bin')
-source=("$pkgname-$pkgver.tar.gz::https://github.com/kinncj/iptv/archive/refs/tags/v$pkgver.tar.gz")
+source=("$pkgname-$pkgver.tar.gz::https://github.com/kinncj/IPTV-TUI/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 
 prepare() {
@@ -32,5 +32,6 @@ package() {
     cd "iptv-$pkgver"
     install -Dm755 iptv-tui "$pkgdir/usr/bin/iptv-tui"
     install -Dm644 packaging/iptv-tui.1 "$pkgdir/usr/share/man/man1/iptv-tui.1"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
     install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
 }

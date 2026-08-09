@@ -16,16 +16,16 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kinncj/iptv/app/tui"
-	"github.com/kinncj/iptv/common/catalog"
-	"github.com/kinncj/iptv/common/config"
-	"github.com/kinncj/iptv/common/export"
-	"github.com/kinncj/iptv/common/iptvorg"
-	"github.com/kinncj/iptv/common/m3u"
-	"github.com/kinncj/iptv/common/player"
-	"github.com/kinncj/iptv/common/source"
-	"github.com/kinncj/iptv/common/state"
-	"github.com/kinncj/iptv/common/termcaps"
+	"github.com/kinncj/IPTV-TUI/app/tui"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/config"
+	"github.com/kinncj/IPTV-TUI/common/export"
+	"github.com/kinncj/IPTV-TUI/common/iptvorg"
+	"github.com/kinncj/IPTV-TUI/common/m3u"
+	"github.com/kinncj/IPTV-TUI/common/player"
+	"github.com/kinncj/IPTV-TUI/common/source"
+	"github.com/kinncj/IPTV-TUI/common/state"
+	"github.com/kinncj/IPTV-TUI/common/termcaps"
 )
 
 // version is set at build time via -ldflags "-X main.version=…".
@@ -43,6 +43,7 @@ func main() {
 	probeConc := flag.Int("probe-concurrency", 12, "max concurrent reachability probes")
 	probeTimeout := flag.Duration("probe-timeout", 6*time.Second, "per-probe timeout")
 	probeAll := flag.Bool("probe-all", false, "probe every channel in the background at startup")
+	voOverride := flag.String("vo", os.Getenv("IPTV_TERM_VO"), "force inline video output: kitty|sixel|tct (default: auto-detect; useful over SSH/tmux)")
 	flag.Parse()
 
 	if *showVersion {
@@ -106,10 +107,15 @@ func main() {
 	lipgloss.SetColorProfile(caps.Profile) // keep truecolor under multiplexers
 	tui.ApplyTheme(themeName, caps.DarkBG, caps.Unicode)
 
-	// Inline terminal playback requires mpv; pick the best video output.
+	// Inline terminal playback requires mpv; pick the best video output, or use
+	// the override (handy over SSH/tmux where auto-detection can't see the local
+	// terminal's capabilities).
 	termVO := ""
 	if player.HasMPV() {
 		termVO = caps.TerminalVO()
+		if *voOverride != "" {
+			termVO = *voOverride
+		}
 	}
 
 	// Persisted favorites / last-played and a source reloader for the `R` key.

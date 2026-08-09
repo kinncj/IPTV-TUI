@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kinncj/iptv/common/probe"
+	"github.com/kinncj/IPTV-TUI/common/probe"
 )
 
 // Palette is a named color scheme. lipgloss/termenv downgrades these hex values

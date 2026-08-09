@@ -5,9 +5,9 @@ package features
 import (
 	"testing"
 
-	"github.com/kinncj/iptv/common/catalog"
-	"github.com/kinncj/iptv/common/m3u"
-	"github.com/kinncj/iptv/common/probe"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/m3u"
+	"github.com/kinncj/IPTV-TUI/common/probe"
 )
 
 // A miniature of the real upstream shape: two sources, overlapping countries,

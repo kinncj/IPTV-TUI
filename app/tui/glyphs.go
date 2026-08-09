@@ -1,6 +1,6 @@
 package tui
 
-import "github.com/kinncj/iptv/common/probe"
+import "github.com/kinncj/IPTV-TUI/common/probe"
 
 // gl returns the unicode glyph when the terminal supports UTF-8, else an ASCII
 // fallback — so the UI stays legible on a bare tty.

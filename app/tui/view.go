@@ -3,11 +3,12 @@ package tui
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kinncj/iptv/common/probe"
+	"github.com/kinncj/IPTV-TUI/common/probe"
 )
 
 var errNoPlayer = errors.New("no media player installed")
@@ -72,16 +73,23 @@ func (m Model) View() string {
 // --- home splash ------------------------------------------------------------
 
 func (m Model) homeView() string {
-	sub := brandStyle.Render("IPTV") + tagStyle.Render("  "+glDot()+"  free TV, every country")
+	// Dim, letter-spaced tagline with a blinking cursor — statusline style.
+	cursor := " "
+	if (m.frame/7)%2 == 0 {
+		cursor = "_"
+	}
+	tagline := tagStyle.Render(letterSpace("your terminal streamer")) +
+		lipgloss.NewStyle().Foreground(cCyan).Background(cBg).Bold(true).Render(cursor)
+
 	hint := mutedStyle.Render("press ") +
 		lipgloss.NewStyle().Foreground(cPurple).Background(cBg).Render("enter") +
 		mutedStyle.Render(" to browse "+itoa(len(m.cat.Groups))+" countries")
 
 	block := lipgloss.JoinVertical(lipgloss.Center,
-		logo("IPTV", m.frame),
+		logo(m.frame),
 		"",
 		"",
-		sub,
+		tagline,
 		"",
 		hint,
 	)
@@ -177,7 +185,7 @@ func (m Model) helpView() string {
 		"",
 		section("Playback"),
 		row("enter", "play in a window ("+m.playerName()+")"),
-		row("t", "play inline in the terminal"+termNote(m.termVO)),
+		row("t", "play inline as a modal"+termNote(m.termVO)+"; f in mpv toggles fullscreen"),
 		row("p", "cycle player (mpv "+glArrow()+" vlc "+glArrow()+" ffplay)"),
 		row("f", "toggle favorite"),
 		row("r", "re-probe the current country"),
@@ -228,6 +236,19 @@ func (m Model) rightLabel(l *list.Model, fallback string) string {
 func assemble(width int, hdr, body, foot string) string {
 	blank := canvasStyle.Width(width).Render("")
 	return lipgloss.JoinVertical(lipgloss.Left, blank, hdr, blank, body, foot)
+}
+
+// letterSpace inserts a space between characters for an airy tagline.
+func letterSpace(s string) string {
+	r := []rune(s)
+	var b strings.Builder
+	for i, c := range r {
+		if i > 0 {
+			b.WriteString(" ")
+		}
+		b.WriteRune(c)
+	}
+	return b.String()
 }
 
 func termNote(vo string) string {

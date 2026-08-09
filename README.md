@@ -1,155 +1,178 @@
-# iptv
+# IPTV TUI
 
-A terminal UI to browse free IPTV playlists by country and launch a player —
-built to make the dead/geo-blocked streams in these public lists *visible before
-you click them*.
+A terminal UI to browse free IPTV playlists by country or category and play the
+channels. It probes each stream's reachability as you browse, so dead and
+geo-blocked channels are visible before you open them.
 
-Source of truth (never hand-maintained — always rebuilt from upstream):
-- [iptv-org/iptv](https://github.com/iptv-org/iptv) — exhaustive, every country
-- [Free-TV/IPTV](https://github.com/Free-TV/IPTV) — curated, working HD
+The app is a browser and launcher. It hosts nothing. It reads public M3U
+playlists and hands a stream URL to a player you already have (mpv, vlc, or
+ffplay). The playlists come from two independent community projects:
 
-See [docs/sources.md](docs/sources.md) for the full iptv-org ecosystem
-(database / api / epg / sdk) and the rebuild flow.
+- iptv-org/iptv: https://github.com/iptv-org/iptv
+- Free-TV/IPTV: https://github.com/Free-TV/IPTV
 
-## Screens
-
-- **Home** — animated 3D block-logo splash, `enter` to browse.
-- **Countries** — filterable groups with a live scrollbar; **Favorites** and
-  **Recent** appear on top once you have some.
-- **Channels** — two-pane: channel list on the left, a detail card on the right
-  (status, favorite, **EPG now/next**, group, source, tvg-id, url).
-- **Sources** — in-TUI manager (`s`) to add/remove your own playlists.
-- **Help** — `?` toggles a keybindings overlay.
-
-Each channel shows a live reachability icon: `✓` reachable · `⚠` blocked
-(usually geo-blocked) · `✗` dead · `…` checking — so you launch a working stream
-on the first try instead of hitting VLC's "unable to open MRL".
-
-**Play in a window** (`enter`) or **inline in the terminal** (`t`, needs mpv) —
-kitty-graphics on Ghostty/kitty/WezTerm, sixel where supported, truecolor blocks
-everywhere else. **Favorite** with `f`; favorites and recently-played persist.
+This project is not affiliated with either, and is not responsible for the
+streams they list. See [DISCLAIMER.md](DISCLAIMER.md).
 
 ## Install
 
-**Arch Linux (AUR)** — package name **IPTV TUI**:
+Arch Linux (AUR), package name IPTV TUI:
 
 ```bash
-paru -S iptv-tui-bin     # prebuilt binary
-# or
+paru -S iptv-tui-bin     # prebuilt binary, installs to /usr/bin/iptv-tui
 paru -S iptv-tui         # build from source (needs go)
 ```
 
-Installs `/usr/bin/iptv-tui` and a man page (`man iptv-tui`). See
-[packaging/RELEASE.md](packaging/RELEASE.md) for the release/publish flow.
-
-**From source:**
+Any Linux or macOS, with the install script (downloads the release binary to
+`/usr/local/bin`, using sudo only if that directory needs it):
 
 ```bash
-make run-tui        # build ./iptv and run
-# or
-make build-tui && ./iptv
+curl -fsSL https://raw.githubusercontent.com/kinncj/IPTV-TUI/main/scripts/install.sh | sh
+# install somewhere else:
+curl -fsSL .../scripts/install.sh | sh -s -- --install-location ~/.local/bin
 ```
 
-## Requirements
+From source:
 
-- Go 1.26+ (to build from source)
-- A player: **mpv** (preferred, required for inline terminal playback), **vlc**, or **ffplay**
+```bash
+make tui/run                 # build ./iptv and run
+# or
+make tui/build && ./iptv
+```
+
+Requirements to build from source: Go 1.26+. For playback you need a player:
+mpv (recommended, and required for inline terminal playback), vlc, or ffplay.
+
+## Screens
+
+- Home: an animated block-logo splash. Press enter to browse.
+- Countries or categories: a filterable group list with a live scrollbar.
+  Favorites and recently played appear on top once you have some.
+- Channels: a two-pane view with the channel list on the left and a detail card
+  on the right (reachability, favorite, EPG now and next, group, source, tvg-id,
+  url).
+- Sources: an in-app manager to add or remove your own playlists.
+- Help: press `?` for the keybindings overlay.
+
+Each channel shows a reachability icon: `✓` reachable, `⚠` blocked (usually
+geo-blocked), `✗` dead, `…` checking. This is how you land on a working stream
+on the first try instead of hitting "unable to open" in a player.
+
+## Playing
+
+Press enter to play in an external player window, or `t` to play inline in the
+terminal with mpv. The inline output is chosen for your terminal: kitty graphics
+on Ghostty, kitty, and WezTerm; sixel where supported; truecolor blocks
+everywhere else. Force it with `-vo kitty|sixel|tct` or `IPTV_TERM_VO`, which is
+useful over SSH or tmux where auto-detection cannot see your local terminal.
 
 ## Keys
 
 | Key             | Action                                     |
 |-----------------|--------------------------------------------|
 | `↑`/`↓` `j`/`k` | move                                       |
-| `enter`         | open group / play channel in a window      |
-| `t`             | play channel inline in the terminal (mpv)  |
+| `enter`         | open a group, or play in a window          |
+| `t`             | play inline in the terminal (mpv)          |
 | `f`             | toggle favorite                            |
-| `g`             | switch grouping: country ↔ category        |
+| `g`             | switch grouping: country or category       |
 | `esc` `h`       | back                                       |
 | `/`             | filter the current list                    |
-| `r`             | re-probe the current country               |
+| `r`             | re-probe the current group                 |
 | `R`             | reload playlists from source               |
 | `s`             | open the sources manager                   |
-| `p`             | cycle player (mpv → vlc → ffplay)          |
+| `p`             | cycle the external player                  |
 | `?`             | toggle help                                |
 | `q` `ctrl+c`    | quit                                       |
 
-In the **sources manager**: `a` add a playlist URL, `d` remove a user source,
-`esc` back. Added sources are written to the gitignored `iptv.local.json` and
-the catalog reloads from source. **Built-in sources (iptv-org, Free-TV) can't be
-removed** — `d` on a built-in is refused.
+In the sources manager: `a` adds a playlist URL, `d` removes a user source, `esc`
+goes back. Added sources are written to the gitignored `iptv.local.json`, and the
+catalog reloads from source. The built-in sources (iptv-org, Free-TV) cannot be
+removed.
 
 ## Flags
 
 ```
-./iptv                      # browse (12h cached playlists)
-./iptv -refresh             # force re-download, then browse
-./iptv -player vlc          # prefer a specific player
-./iptv -theme catppuccin    # pick a theme (default: auto, follows OS light/dark)
-./iptv -themes              # list available themes
-./iptv -api                 # ingest the iptv-org source from its JSON API (richer metadata)
-./iptv -probe-concurrency N # max concurrent reachability probes (default 12)
-./iptv -probe-timeout 6s    # per-probe timeout
-./iptv -probe-all           # probe every channel in the background at startup
-./iptv -cache DIR           # override cache directory
-./iptv -export DIR          # rebuild all.m3u + countries/*.m3u from upstream, then exit
+iptv-tui                     browse (12h cached playlists)
+iptv-tui -version            print the version
+iptv-tui -refresh            force a re-download, then browse
+iptv-tui -player vlc         prefer a specific player
+iptv-tui -vo tct             force the inline video output (SSH/tmux)
+iptv-tui -theme catppuccin   pick a theme (default: auto, follows OS light/dark)
+iptv-tui -themes             list themes
+iptv-tui -api                ingest the iptv-org source from its JSON API
+iptv-tui -probe-concurrency 12
+iptv-tui -probe-timeout 6s
+iptv-tui -probe-all          probe every channel in the background
+iptv-tui -cache DIR          override the cache directory
+iptv-tui -export DIR         rebuild all.m3u + per-country playlists, then exit
 ```
 
-### iptv-org API mode (`-api`)
+### iptv-org API mode
 
-By default the built-in iptv-org source is the country-grouped **M3U**. With
-`-api` (or `"api": true` in config) it's ingested from the **iptv-org JSON API**
-instead — joining `channels`/`streams`/`countries` for **stable channel IDs**
-(better EPG matching), proper country names, and categories. This swaps **only**
-the built-in iptv-org list; **Free-TV and your own added lists are untouched**, so
-turning it on can't break your sources.
+By default the built-in iptv-org source is the country-grouped M3U. With `-api`
+(or `"api": true` in config) it comes from the iptv-org JSON API instead, which
+joins channels, streams, and countries for stable channel IDs (better EPG
+matching), proper country names, and categories. This swaps only the built-in
+iptv-org list. Free-TV and your own lists are untouched, so turning it on cannot
+break your sources.
 
-## Themes & terminal
+## Themes and terminal support
 
-The palette **follows your terminal's light/dark background by default** (`auto`).
-Named packs: `tokyonight` (default), `catppuccin`, `gruvbox`, `nord`,
-`everforest`, plus distro flavors `arch`, `cachyos`, `omarchy`, and light
-variants. Pick with `-theme`, `IPTV_THEME`, or the config file.
+The palette follows your terminal's light or dark background by default (`auto`).
+Named themes: tokyonight (default), catppuccin, gruvbox, nord, everforest, and
+the distro flavors arch, cachyos, and omarchy, plus light variants. Pick one with
+`-theme`, `IPTV_THEME`, or the config file.
 
-Capability-aware, so it's fancy when your tools are and still fancy when they're
-not:
-- **Truecolor** (Ghostty, kitty, WezTerm, …) gets the full 24-bit palette; it's
-  forced on so it survives multiplexers (**herdr**, tmux) that under-report it.
-- Lower-color terminals get the same palette **auto-downgraded** to 256/16 colors.
-- **Non-UTF-8** terminals fall back to ASCII glyphs and borders.
+Truecolor terminals (Ghostty, kitty, WezTerm) get the full palette, forced on so
+it survives multiplexers like herdr and tmux that under-report it. Lower-color
+terminals get the same palette downgraded to 256 or 16 colors. Terminals without
+UTF-8 fall back to ASCII glyphs and borders.
 
-## Local config (extra lists)
+## Local config
 
-Add your own playlists on top of the upstream repos via an optional, gitignored
-config — see [docs/config.md](docs/config.md):
+Config is optional. Add your own playlists on top of the upstream lists, or pin a
+theme and player, through a gitignored file. See [docs/config.md](docs/config.md).
 
 ```json
-// ./iptv.local.json  (gitignored)  or  ~/.config/iptv/config.json
+// ./iptv.local.json (gitignored) or ~/.config/iptv/config.json
 { "theme": "catppuccin", "player": "mpv",
   "sources": [ { "name": "my-list", "url": "https://example.com/list.m3u8" } ] }
 ```
 
+Precedence for theme and player is flag, then environment, then config, then the
+default.
+
 ## Rebuild playlists from source
 
-The app is also the playlist builder — it pulls fresh from the repos and writes
-standard M3U files any other player can use:
+The app is also the playlist builder. It pulls fresh from the upstream repos and
+writes standard M3U files any player can read:
 
 ```bash
-make rebuild                # -> ./playlists/all.m3u + ./playlists/countries/*.m3u
+make playlists/rebuild       # ./playlists/all.m3u + ./playlists/countries/*.m3u
 ```
 
 ## Make targets
 
+Targets are slash-namespaced:
+
 ```
-make build-tui        build ./iptv
-make run-tui          build and run
-make refresh          run with -refresh
-make rebuild          export playlists from upstream into ./playlists
-make test             unit tests
-make test-race        unit tests + race detector
-make test-acceptance  end-to-end pipeline tests
-make lint             go vet + gofmt check
-make clean            remove binary and cache
+make tui/build          build ./iptv
+make tui/run            build and run
+make tui/install        go install into GOBIN
+make playlists/rebuild  export playlists from upstream
+make test               unit tests
+make test/race          tests with the race detector
+make test/acceptance    end-to-end pipeline tests
+make lint               go vet + gofmt check
+make ci                 lint + race tests + build
+make release/build      cross-compile binaries + man + LICENSE into dist/
+make gh/release         create the GitHub release and upload assets
+make aur/pkgbuild       regenerate the -bin PKGBUILD from dist/
+make aur/release        build, regenerate, and push iptv-tui-bin to the AUR
 ```
+
+Release and AUR targets take `VERSION=x.y.z` (semver). See
+[packaging/RELEASE.md](packaging/RELEASE.md).
 
 ## Architecture
 
@@ -160,23 +183,36 @@ Clean Architecture; dependencies point inward toward the domain. See
 ```
 app/
   main.go        composition root (wiring, flags, config, -export)
-  tui/           Bubble Tea: model/update/view, theme, logo, delegate, components, glyphs
+  tui/           Bubble Tea: model, update, view, theme, logo, delegate, sources
 common/
-  catalog/       domain model — Channel, Group, Catalog (no I/O)
-  m3u/           pure M3U parser
-  source/        playlist fetch + disk cache (source-of-truth URLs live here)
+  catalog/       domain model, Channel/Group/Catalog (no I/O)
+  m3u/           M3U parser
+  iptvorg/       iptv-org JSON API ingestion (opt-in)
+  source/        playlist fetch + disk cache
   probe/         stream reachability checks
-  player/        Player interface + mpv/vlc/ffplay
-  export/        regenerate on-disk playlists from a catalog
-  config/        optional gitignored user config (extra sources, theme, player)
-  termcaps/      terminal capability detection (color depth, dark/light, unicode)
+  player/        Player interface + mpv/vlc/ffplay, inline terminal playback
+  export/        regenerate playlists from a catalog
+  config/        gitignored user config
+  state/         persisted favorites and last-played
+  epg/           XMLTV program guide, now and next
+  termcaps/      terminal capability detection
 tests/features/  acceptance tests
-docs/            ADR + architecture + sources + config
+docs/            ADR, architecture, sources, config
+packaging/       man page, release build, AUR PKGBUILDs
 ```
 
-## Notes
+## Content and legal
 
-- Reachability is best-effort: a probe can pass yet the stream still fail in the
-  player (and vice versa) due to geo-blocks, auth, or codec quirks.
-- A dead upstream source won't sink the app — the other still loads, and a stale
-  cache is used if the network is down.
+The streams and their legality are the responsibility of the upstream list
+maintainers and the original broadcasters, not of this project. Nothing is hosted
+here. Full notice in [DISCLAIMER.md](DISCLAIMER.md).
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md),
+and [SECURITY.md](SECURITY.md). Report security issues privately, not as a public
+issue.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

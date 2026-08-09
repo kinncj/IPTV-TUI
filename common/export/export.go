@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kinncj/iptv/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
 )
 
 var unsafeName = regexp.MustCompile(`[/\\:*?"<>|]+`)

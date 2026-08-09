@@ -1,17 +1,18 @@
 # Local configuration
 
-Config is **optional** — the app works with zero config. Use it to add your own
-playlists on top of the upstream source-of-truth repos, or to pin a theme/player.
+Config is optional. The app works with none. Use it to add your own playlists on
+top of the upstream lists, or to pin a theme, player, or API mode.
 
 ## Files (merged in order)
 
 | Path | Scope | Tracked? |
 |------|-------|----------|
-| `$XDG_CONFIG_HOME/iptv/config.json` (usually `~/.config/iptv/config.json`) | per-user | n/a |
-| `./iptv.local.json` | this repo | **gitignored** |
+| `$XDG_CONFIG_HOME/iptv/config.json` (usually `~/.config/iptv/config.json`) | per user | n/a |
+| `./iptv.local.json` | this repo | gitignored |
 
-Later files win for scalar settings (`theme`, `player`); `sources` are appended.
-A malformed file is reported on stderr and skipped — it never crashes the app.
+Later files win for scalar settings (`theme`, `player`, `api`). The `sources`
+lists are appended. A malformed file is reported on stderr and skipped; it never
+crashes the app.
 
 ## Format
 
@@ -27,27 +28,28 @@ A malformed file is reported on stderr and skipped — it never crashes the app.
 }
 ```
 
-- **`sources`** — extra M3U/M3U8 playlists, added *after* iptv-org and Free-TV.
-  De-duplicated by URL. They flow through the same parser, so their
-  `group-title` tags become navigable groups just like the built-ins.
-- **`theme`** — any name from `iptv -themes` (or `auto`).
-- **`player`** — `mpv` | `vlc` | `ffplay`.
-- **`api`** — `true` ingests the built-in iptv-org source from its JSON API
-  (stable IDs, categories) instead of M3U. Affects only that built-in source;
-  Free-TV and your `sources` are unchanged.
+- `sources`: extra M3U/M3U8 playlists, added after iptv-org and Free-TV, and
+  de-duplicated by URL. They flow through the same parser, so their `group-title`
+  tags become navigable groups like the built-ins.
+- `theme`: any name from `iptv -themes`, or `auto`.
+- `player`: `mpv`, `vlc`, or `ffplay`.
+- `api`: `true` ingests the built-in iptv-org source from its JSON API (stable
+  IDs, categories) instead of M3U. It affects only that built-in source. Free-TV
+  and your `sources` are unchanged.
 
 ## Precedence
 
-For theme and player: **flag > environment > config > default**.
+For theme and player, the order is flag, then environment, then config, then the
+default.
 
 ```
 iptv -theme gruvbox          # flag wins
-IPTV_THEME=nord iptv         # env, if no flag
-# else config.theme, else auto
+IPTV_THEME=nord iptv         # environment, if no flag
+# then config.theme, then auto
 ```
 
-## Roadmap
+## Adding sources without editing JSON
 
-Adding/removing sources from *inside* the TUI (a small form that writes
-`iptv.local.json`) is planned — see ADR-0001 next steps. Today, edit the JSON
-and relaunch (or press `-refresh` semantics via restart).
+You can add and remove sources from inside the app. Press `s` in the group list
+to open the sources manager, then `a` to add a URL or `d` to remove one you
+added. Additions are written to `iptv.local.json` for you.

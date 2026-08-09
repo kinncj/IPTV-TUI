@@ -13,12 +13,12 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/kinncj/iptv/common/catalog"
-	"github.com/kinncj/iptv/common/config"
-	"github.com/kinncj/iptv/common/epg"
-	"github.com/kinncj/iptv/common/player"
-	"github.com/kinncj/iptv/common/probe"
-	"github.com/kinncj/iptv/common/state"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/config"
+	"github.com/kinncj/IPTV-TUI/common/epg"
+	"github.com/kinncj/IPTV-TUI/common/player"
+	"github.com/kinncj/IPTV-TUI/common/probe"
+	"github.com/kinncj/IPTV-TUI/common/state"
 )
 
 type viewState int

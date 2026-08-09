@@ -4,9 +4,9 @@ import (
 	"sync"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kinncj/iptv/common/catalog"
-	"github.com/kinncj/iptv/common/probe"
-	"github.com/kinncj/iptv/common/state"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/probe"
+	"github.com/kinncj/IPTV-TUI/common/state"
 )
 
 // statusStore holds live probe results keyed by stream URL. List items read from

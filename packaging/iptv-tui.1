@@ -13,6 +13,9 @@ open them. Channels can be played in an external window or inline in the
 terminal (via mpv), and favorites and recently played channels are remembered.
 .SH OPTIONS
 .TP
+.B \-version
+Print the version and exit.
+.TP
 .B \-refresh
 Force a re-download of playlists, ignoring the cache.
 .TP
@@ -39,6 +42,10 @@ Per-probe timeout (default 6s).
 .TP
 .B \-probe-all
 Probe every channel in the background at startup.
+.TP
+.B \-vo \fIkitty|sixel|tct\fR
+Force the inline video output. Useful over SSH or tmux, where the default
+auto-detection cannot see your local terminal.
 .TP
 .B \-cache \fIDIR\fR
 Override the playlist cache directory.
@@ -96,4 +103,4 @@ Cached playlists and persisted favorites/last-played (state.json).
 .SH AUTHOR
 Kinn Coelho Juliao <kinncj@gmail.com>
 .SH HOMEPAGE
-https://github.com/kinncj/iptv
+https://github.com/kinncj/IPTV-TUI

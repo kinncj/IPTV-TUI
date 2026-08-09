@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/kinncj/iptv/common/catalog"
-	"github.com/kinncj/iptv/common/probe"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/probe"
 )
 
 // header renders `❯ title …… right` followed by a full-width rule.

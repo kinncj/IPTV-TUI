@@ -12,8 +12,8 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/kinncj/iptv/common/catalog"
-	"github.com/kinncj/iptv/common/source"
+	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/source"
 )
 
 const (
