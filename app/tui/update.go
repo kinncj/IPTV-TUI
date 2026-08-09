@@ -4,7 +4,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/kinncj/IPTV-TUI/common/catalog"
-	"github.com/kinncj/IPTV-TUI/common/player"
 )
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -15,6 +14,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.showHelp = false
 		}
 		return m, nil
+	}
+
+	// Inline video and its chooser capture their own keys.
+	if m.vid != nil {
+		return m.handleVideoKey(msg)
+	}
+	if m.picking {
+		return m.handlePickKey(msg)
 	}
 
 	// The source manager captures its own keys.
@@ -146,7 +153,8 @@ func (m Model) toggleFavorite() (tea.Model, tea.Cmd) {
 	return m, m.animate()
 }
 
-// playHere renders the selected stream inline in the terminal via mpv.
+// playHere opens the terminal-player chooser for the selected channel. If only
+// one backend is available it plays with that one directly.
 func (m Model) playHere() (tea.Model, tea.Cmd) {
 	if m.state != viewChannels {
 		return m, nil
@@ -155,17 +163,24 @@ func (m Model) playHere() (tea.Model, tea.Cmd) {
 	if !ok {
 		return m, nil
 	}
-	if m.termVO == "" {
-		m.toast = "inline playback needs mpv"
-		m.toastTTL = 18
+	opts := m.playerOptions()
+	if len(opts) == 0 {
+		m.toast = "inline playback needs mpv or ffmpeg"
+		m.toastTTL = 20
 		return m, m.animate()
 	}
+	m.vidTitle = sel.ch.Name
+	m.vidURL = sel.ch.URL
 	m.recordRecent(sel.ch)
-	name := sel.ch.Name
-	cmd := player.TerminalCmd(sel.ch.URL, m.termVO, name)
-	return m, tea.ExecProcess(cmd, func(err error) tea.Msg {
-		return termDoneMsg{channel: name, err: err}
-	})
+	if len(opts) == 1 {
+		return m.playWith(opts[0].key)
+	}
+	m.picking = true
+	m.pickOpts = opts
+	if m.pickIdx >= len(opts) {
+		m.pickIdx = 0
+	}
+	return m, nil
 }
 
 func (m *Model) recordRecent(ch catalog.Channel) {

@@ -16,11 +16,10 @@ streams they list. See [DISCLAIMER.md](DISCLAIMER.md).
 
 ## Install
 
-Arch Linux (AUR), package name IPTV TUI:
+Arch Linux (AUR):
 
 ```bash
 paru -S iptv-tui-bin     # prebuilt binary, installs to /usr/bin/iptv-tui
-paru -S iptv-tui         # build from source (needs go)
 ```
 
 Any Linux or macOS, with the install script (downloads the release binary to

@@ -16,6 +16,7 @@ import (
 	"github.com/kinncj/IPTV-TUI/common/catalog"
 	"github.com/kinncj/IPTV-TUI/common/config"
 	"github.com/kinncj/IPTV-TUI/common/epg"
+	"github.com/kinncj/IPTV-TUI/common/inlinevid"
 	"github.com/kinncj/IPTV-TUI/common/player"
 	"github.com/kinncj/IPTV-TUI/common/probe"
 	"github.com/kinncj/IPTV-TUI/common/state"
@@ -74,6 +75,17 @@ type Model struct {
 	byCategory   catalog.Catalog
 	byCategoryOn bool
 
+	// terminal-player chooser + built-in inline video
+	picking  bool
+	pickIdx  int
+	pickOpts []playerOption
+	vid      *inlinevid.Stream
+	vidRows  []string
+	vidTitle string
+	vidURL   string
+	vidFull  bool
+	vidGen   int // invalidates frames from a superseded stream (resize/close)
+
 	// animation + transient notifications
 	frame     int
 	animating bool
@@ -111,6 +123,15 @@ type epgLoadedMsg struct {
 	group string
 	guide *epg.Guide
 	err   error
+}
+
+type vidFrameMsg struct {
+	rows []string
+	gen  int
+}
+type vidEndMsg struct {
+	err error
+	gen int
 }
 
 type tickMsg time.Time
@@ -364,6 +385,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.guideGroup = msg.group
 		}
 		return m, nil
+
+	case vidFrameMsg:
+		if m.vid == nil || msg.gen != m.vidGen {
+			return m, nil // stale frame from a superseded stream
+		}
+		m.vidRows = msg.rows
+		return m, m.nextVidFrame()
+
+	case vidEndMsg:
+		if msg.gen != m.vidGen {
+			return m, nil // the stream that ended was already replaced
+		}
+		m.closeVid()
+		m.toast = "playback ended"
+		m.toastTTL = 16
+		return m, m.animate()
 
 	case tea.KeyMsg:
 		return m.handleKey(msg)

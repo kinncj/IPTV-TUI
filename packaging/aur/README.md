@@ -12,7 +12,7 @@ License is MIT; the license file is installed under
 ## Manual publish
 
 ```bash
-make aur/release VERSION=1.3.0
+make aur/release VERSION=1.0.0
 ```
 
 This builds the release assets, regenerates `iptv-tui-bin/PKGBUILD` with real

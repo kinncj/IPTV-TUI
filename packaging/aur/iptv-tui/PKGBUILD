@@ -1,6 +1,6 @@
 # Maintainer: Kinn Coelho Juliao <kinncj@gmail.com>
 pkgname=iptv-tui
-pkgver=1.3.0
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="IPTV TUI, a terminal UI to browse free IPTV playlists (iptv-org, Free-TV) by country or category and play them"
 arch=('x86_64' 'aarch64')
@@ -10,7 +10,7 @@ depends=('glibc')
 makedepends=('go>=1.26')
 optdepends=('mpv: inline terminal playback and best HLS support'
             'vlc: alternate external player'
-            'ffmpeg: ffplay fallback player')
+            'ffmpeg: built-in inline video player, and ffplay')
 provides=('iptv-tui')
 conflicts=('iptv-tui-bin')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/kinncj/IPTV-TUI/archive/refs/tags/v$pkgver.tar.gz")

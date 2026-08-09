@@ -56,6 +56,10 @@ func (m Model) View() string {
 	}
 	var content string
 	switch {
+	case m.vid != nil:
+		content = m.videoView()
+	case m.picking:
+		content = m.chooserView()
 	case m.showHelp:
 		content = m.helpView()
 	case m.state == viewHome:
@@ -185,7 +189,7 @@ func (m Model) helpView() string {
 		"",
 		section("Playback"),
 		row("enter", "play in a window ("+m.playerName()+")"),
-		row("t", "play inline as a modal"+termNote(m.termVO)+"; f in mpv toggles fullscreen"),
+		row("t", "play in the terminal (choose mpv or built-in)"),
 		row("p", "cycle player (mpv "+glArrow()+" vlc "+glArrow()+" ffplay)"),
 		row("f", "toggle favorite"),
 		row("r", "re-probe the current country"),

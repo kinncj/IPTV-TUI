@@ -6,9 +6,7 @@ On Arch Linux, install from the AUR (package name IPTV TUI). It installs the
 binary to `/usr/bin/iptv-tui`:
 
 ```bash
-paru -S iptv-tui-bin     # prebuilt
-# or
-paru -S iptv-tui         # build from source
+paru -S iptv-tui-bin
 ```
 
 On any Linux or macOS, use the install script. It downloads the release binary

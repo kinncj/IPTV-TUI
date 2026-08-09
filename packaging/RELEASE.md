@@ -19,10 +19,10 @@ The release workflow does most of this. See
 1. Tag and push:
 
    ```bash
-   git tag v1.3.0 && git push origin v1.3.0
+   git tag v1.0.0 && git push origin v1.0.0
    ```
 
-2. Publish a GitHub release for that tag (in the UI, or `gh release create v1.3.0
+2. Publish a GitHub release for that tag (in the UI, or `gh release create v1.0.0
    --generate-notes`). The workflow builds the binaries, attaches them with
    `SHA256SUMS`, and, if `ENABLE_AUR` is set, pushes `iptv-tui-bin` to the AUR.
 
@@ -33,24 +33,24 @@ Use this if you are not running the workflow.
 1. Commit, push, and tag:
 
    ```bash
-   git add -A && git commit -m "iptv-tui v1.3.0"
+   git add -A && git commit -m "iptv-tui v1.0.0"
    git push origin main
-   git tag v1.3.0 && git push origin v1.3.0
+   git tag v1.0.0 && git push origin v1.0.0
    ```
 
 2. Build binaries and publish the release:
 
    ```bash
-   make gh/release VERSION=1.3.0
+   make gh/release VERSION=1.0.0
    ```
 
    This cross-compiles into `dist/` (linux and darwin, amd64 and arm64), plus the
-   man page, LICENSE, and `SHA256SUMS`, then uploads them to the `v1.3.0` release.
+   man page, LICENSE, and `SHA256SUMS`, then uploads them to the `v1.0.0` release.
 
 3. Push the AUR package:
 
    ```bash
-   make aur/release VERSION=1.3.0
+   make aur/release VERSION=1.0.0
    ```
 
    This regenerates `iptv-tui-bin/PKGBUILD` with the release checksums and pushes

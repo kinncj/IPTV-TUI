@@ -10,21 +10,33 @@ is used; the footer shows the current one.
 
 ## Inline, in the terminal
 
-Press `t`. The video renders inside the terminal itself, no separate window. This
-needs mpv. It opens as a centered modal that takes most of the terminal but not
-all of it. Press `f` while it plays to toggle between fullscreen and the modal
-size, and `q` to quit and return to the browser. mpv shows a short banner at the
-top with the channel name and these controls.
+Press `t`. If more than one backend is available, a small chooser appears so you
+can pick how to play. There are two backends, and they work differently.
 
-A note on what "inline" means here. A terminal video player takes its own
-alternate screen to paint frames, the same way `less` or `vim` do. So while a
-channel plays, mpv owns the screen: the browser is not drawn behind the video,
-and the video cannot be framed by the app or overlaid on the live list. The modal
-is mpv rendering the video at 78% of the terminal, centered, on its own screen.
-`f` cycles that geometry between 78% and fullscreen. The resize is live on the
-kitty and sixel outputs, which redraw each frame; on the plain `tct` output the
-change may only apply cleanly on some terminals. When you quit mpv, the browser
-returns exactly where you left it.
+### mpv (external)
+
+Sharp video, hardware-decoded. mpv takes its own alternate screen to paint
+frames, the same way `less` or `vim` do, so while it plays mpv owns the screen:
+the browser is not drawn behind the video. It opens as a centered modal at 78% of
+the terminal; press `f` to toggle between that and fullscreen (live on the kitty
+and sixel outputs). Press `q` in mpv to quit it and return to the browser. mpv
+shows a short banner with the channel name and controls.
+
+### built-in (in the TUI)
+
+Renders the video with the app itself, as truecolor half-block characters, so it
+draws in a modal with the channel list still visible above and below it. It needs
+ffmpeg, which decodes the video (frames come to the app) and plays the audio.
+
+The picture is blocky, at cell resolution, because each character is two vertical
+pixels. That is the trade for keeping the TUI live behind it. While it plays:
+
+- `f` toggles between the modal size and nearly-full.
+- `esc` closes the player and returns to the browser.
+- `q` quits the whole app.
+
+The key rule is consistent with the rest of the app: `esc` goes back, `q` quits.
+(mpv is the exception, because it uses its own keys, where `q` quits mpv.)
 
 The video output is chosen for your terminal:
 

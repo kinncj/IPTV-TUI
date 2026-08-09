@@ -47,7 +47,7 @@ provides=('iptv-tui')
 conflicts=('iptv-tui')
 optdepends=('mpv: inline terminal playback and best HLS support'
             'vlc: alternate external player'
-            'ffmpeg: ffplay fallback player')
+            'ffmpeg: built-in inline video player, and ffplay')
 source=("iptv-tui_\${pkgver}.1::https://github.com/kinncj/IPTV-TUI/releases/download/v\${pkgver}/iptv-tui.1"
         "iptv-tui_\${pkgver}.LICENSE::https://github.com/kinncj/IPTV-TUI/releases/download/v\${pkgver}/LICENSE")
 sha256sums=('${man_sha}'
@@ -77,7 +77,7 @@ pkgbase = iptv-tui-bin
 	conflicts = iptv-tui
 	optdepends = mpv: inline terminal playback and best HLS support
 	optdepends = vlc: alternate external player
-	optdepends = ffmpeg: ffplay fallback player
+	optdepends = ffmpeg: built-in inline video player, and ffplay
 	source = iptv-tui_${ver}.1::https://github.com/kinncj/IPTV-TUI/releases/download/v${ver}/iptv-tui.1
 	sha256sums = ${man_sha}
 	source = iptv-tui_${ver}.LICENSE::https://github.com/kinncj/IPTV-TUI/releases/download/v${ver}/LICENSE

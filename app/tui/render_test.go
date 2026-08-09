@@ -108,10 +108,17 @@ func TestFavoritesAndSourcesRender(t *testing.T) {
 	if strings.TrimSpace(m.channelsView()) == "" {
 		t.Error("channels view empty")
 	}
-	m = send(m, key("t")) // inline play path (mpv present)
+	// `t` opens the player chooser (mpv is available; ffmpeg may be too).
+	m = send(m, key("t"))
+	if m.picking {
+		if strings.TrimSpace(m.chooserView()) == "" {
+			t.Error("chooser view empty")
+		}
+		m = send(m, key("esc")) // close chooser, back to channels
+	}
 
 	// Sources manager: open, enter add-mode, render.
-	m = send(m, key("esc")) // back to groups
+	m = send(m, key("esc")) // channels -> groups
 	m = send(m, key("s"))
 	if m.state != viewSources {
 		t.Fatalf("state = %v, want viewSources", m.state)
@@ -124,6 +131,47 @@ func TestFavoritesAndSourcesRender(t *testing.T) {
 		t.Error("'a' should enter add mode")
 	}
 	_ = m.sourcesView() // must not panic in add mode
+}
+
+// TestPlayerChooser covers the `t` chooser: navigation, esc cancels, and that
+// mpv is always offered when available.
+func TestPlayerChooser(t *testing.T) {
+	ApplyTheme("tokyonight", true, true)
+	cat := catalog.Build([]catalog.Channel{{Name: "Ch", URL: "http://a", Group: "G"}})
+	m := New(cat, fakePlayers("mpv")).WithTerminalPlayback("tct")
+	m = send(m, tea.WindowSizeMsg{Width: 120, Height: 40})
+	m = send(send(m, key("enter")), key("enter")) // into channels
+
+	// mpv must be one of the offered backends.
+	hasMPV := false
+	for _, o := range m.playerOptions() {
+		if o.key == "mpv" {
+			hasMPV = true
+		}
+	}
+	if !hasMPV {
+		t.Fatal("mpv should be offered when termVO is set")
+	}
+
+	// Drive a two-option chooser directly so the test doesn't depend on ffmpeg.
+	m.picking = true
+	m.pickOpts = []playerOption{{key: "mpv", label: "mpv"}, {key: "builtin", label: "built-in"}}
+	m.pickIdx = 0
+	m.vidTitle = "Ch"
+	m.vidURL = "http://a"
+
+	if strings.TrimSpace(m.chooserView()) == "" {
+		t.Error("chooser view empty")
+	}
+	m = send(m, key("down"))
+	if m.pickIdx != 1 {
+		t.Errorf("down should move selection to 1, got %d", m.pickIdx)
+	}
+	// esc cancels (does not quit).
+	m = send(m, key("esc"))
+	if m.picking {
+		t.Error("esc should close the chooser")
+	}
 }
 
 // TestBuiltinSourceNotRemovable guards the promise that built-in sources can't
