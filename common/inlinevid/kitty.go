@@ -6,11 +6,13 @@ import (
 	"strings"
 )
 
-// kittyTransmit builds the escape sequence that sends one RGB frame to the
-// terminal as image `id`, chunked to kitty's 4096-byte payload limit and marked
-// U=1 so it is displayed through unicode placeholders. Emitting it again with
-// the same id replaces the image, which is how video updates.
-func kittyTransmit(rgb []byte, w, h, id int) string {
+// kittyTransmit builds the escape sequence that sends one RGB frame (w x h
+// pixels) to the terminal as image `id`, to be shown across cols x rows cells.
+// It is chunked to kitty's 4096-byte payload limit and marked U=1 so it displays
+// through unicode placeholders. c=cols,r=rows make the image span the whole
+// placeholder grid instead of a default cell size. Re-sending with the same id
+// replaces the image, which is how video updates.
+func kittyTransmit(rgb []byte, w, h, cols, rows, id int) string {
 	b64 := base64.StdEncoding.EncodeToString(rgb)
 	const chunk = 4096
 	var sb strings.Builder
@@ -29,8 +31,8 @@ func kittyTransmit(rgb []byte, w, h, id int) string {
 		sb.WriteString("\x1b_G")
 		if first {
 			// f=24: RGB. a=T: transmit and display. U=1: unicode placement.
-			// q=2: no acknowledgements.
-			fmt.Fprintf(&sb, "f=24,s=%d,v=%d,i=%d,a=T,U=1,q=2,m=%d", w, h, id, more)
+			// c/r: span this many columns/rows of cells. q=2: no acknowledgements.
+			fmt.Fprintf(&sb, "f=24,s=%d,v=%d,c=%d,r=%d,i=%d,a=T,U=1,q=2,m=%d", w, h, cols, rows, id, more)
 			first = false
 		} else {
 			fmt.Fprintf(&sb, "m=%d", more)

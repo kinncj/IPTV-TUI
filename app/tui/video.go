@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kinncj/IPTV-TUI/common/inlinevid"
-	"github.com/kinncj/IPTV-TUI/common/player"
+	"github.com/kinncj/IPTV-TUI/common/resolve"
 )
 
 // playerOption is a terminal-player backend the user can pick for `t`.
@@ -70,17 +70,16 @@ func (m Model) handlePickKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m Model) playWith(key string) (tea.Model, tea.Cmd) {
 	m.picking = false
-	switch key {
-	case "mpv":
-		name := m.vidTitle
-		cmd := player.TerminalCmd(m.vidURL, m.termVO, name)
-		return m, tea.ExecProcess(cmd, func(err error) tea.Msg {
-			return termDoneMsg{channel: name, err: err}
-		})
-	case "builtin":
-		return m.startInline()
+	// Resolve page URLs (YouTube, etc.) to a direct stream first, off the UI
+	// goroutine, then play with the chosen backend.
+	if resolve.Needed(m.vidURL) {
+		m.toast = "resolving stream…"
+		m.toastTTL = 40
 	}
-	return m, nil
+	url, backend, title := m.vidURL, key, m.vidTitle
+	return m, tea.Batch(m.animate(), func() tea.Msg {
+		return playResolvedMsg{url: resolve.Direct(url), backend: backend, title: title}
+	})
 }
 
 func (m Model) chooserView() string {

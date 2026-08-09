@@ -11,10 +11,10 @@ func TestKittyTransmitRoundTrip(t *testing.T) {
 	for i := range rgb {
 		rgb[i] = byte(i * 7)
 	}
-	esc := kittyTransmit(rgb, 2, 2, 42)
+	esc := kittyTransmit(rgb, 2, 2, 2, 2, 42)
 
-	if !strings.HasPrefix(esc, "\x1b_Gf=24,s=2,v=2,i=42,a=T,U=1,q=2,m=0;") {
-		t.Fatalf("control header wrong: %q", esc[:40])
+	if !strings.HasPrefix(esc, "\x1b_Gf=24,s=2,v=2,c=2,r=2,i=42,a=T,U=1,q=2,m=0;") {
+		t.Fatalf("control header wrong: %q", esc[:48])
 	}
 	if !strings.HasSuffix(esc, "\x1b\\") {
 		t.Fatalf("escape not terminated with ST")
@@ -33,7 +33,7 @@ func TestKittyTransmitRoundTrip(t *testing.T) {
 func TestKittyTransmitChunks(t *testing.T) {
 	// A frame large enough to need multiple 4096-byte base64 chunks.
 	rgb := make([]byte, 8000)
-	esc := kittyTransmit(rgb, 40, 66, 42)
+	esc := kittyTransmit(rgb, 40, 66, 10, 5, 42)
 	if strings.Count(esc, "\x1b_G") < 2 {
 		t.Errorf("large frame should be split into multiple chunks")
 	}

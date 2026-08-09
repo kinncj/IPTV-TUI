@@ -147,6 +147,15 @@ detect_pm() {
   else echo ""; fi
 }
 
+gentoo_atom() { # map a package name to its Gentoo atom
+  case "$1" in
+    mpv)     echo "media-video/mpv" ;;
+    ffmpeg)  echo "media-video/ffmpeg" ;;
+    yt-dlp)  echo "net-misc/yt-dlp" ;;
+    *)       echo "$1" ;;
+  esac
+}
+
 install_cmd() { # <pm> <pkgs...>
   pm="$1"; shift; pkgs="$*"
   case "$pm" in
@@ -155,7 +164,7 @@ install_cmd() { # <pm> <pkgs...>
     dnf)    echo "sudo dnf install ${pkgs}" ;;
     zypper) echo "sudo zypper install ${pkgs}" ;;
     apt)    echo "sudo apt-get update && sudo apt-get install -y ${pkgs}" ;;
-    emerge) atoms=""; for p in $pkgs; do atoms="${atoms} media-video/${p}"; done
+    emerge) atoms=""; for p in $pkgs; do atoms="${atoms} $(gentoo_atom "$p")"; done
             echo "sudo emerge --ask${atoms}" ;;
     *)      echo "" ;;
   esac
@@ -175,10 +184,13 @@ if command -v mpv >/dev/null 2>&1 || command -v vlc >/dev/null 2>&1 || command -
 fi
 have_ffmpeg=0
 command -v ffmpeg >/dev/null 2>&1 && have_ffmpeg=1
+have_ytdlp=0
+command -v yt-dlp >/dev/null 2>&1 && have_ytdlp=1
 
 missing=""
 [ "$have_player" = 0 ] && missing="mpv"
 [ "$have_ffmpeg" = 0 ] && missing="${missing:+$missing }ffmpeg"
+[ "$have_ytdlp" = 0 ] && missing="${missing:+$missing }yt-dlp"
 
 echo
 if [ -z "$missing" ]; then
@@ -188,6 +200,7 @@ else
   cmd=$(install_cmd "$pm" $missing)
   echo "Runtime dependencies to install: ${missing}"
   echo "  mpv     recommended player, plus audio for the built-in inline player"
+  echo "  yt-dlp  play YouTube channels (Free-TV lists some, marked with a Y)"
   echo "  ffmpeg  the built-in inline video player (and ffplay)"
   if [ -n "$cmd" ] && [ "$INSTALL_DEPS" = 1 ] && [ "$pm" != emerge ]; then
     echo "Installing: ${cmd}"

@@ -11,10 +11,45 @@ package iptvorg
 import (
 	"encoding/json"
 	"sort"
+	"strings"
 
 	"github.com/kinncj/IPTV-TUI/common/catalog"
 	"github.com/kinncj/IPTV-TUI/common/source"
 )
+
+// Categories fetches just the channel-to-category mapping from the API's
+// channels.json (channel id to its primary category). It enriches M3U channels
+// with categories without changing their country grouping.
+func Categories(loader *source.Loader, refresh bool) (map[string]string, error) {
+	b, err := loader.Load(source.Source{Name: "iptvorg-channels", URL: channelsURL}, refresh)
+	if err != nil {
+		return nil, err
+	}
+	var channels []apiChannel
+	if err := json.Unmarshal(b, &channels); err != nil {
+		return nil, err
+	}
+	m := make(map[string]string, len(channels))
+	for _, c := range channels {
+		if len(c.Categories) > 0 {
+			m[c.ID] = c.Categories[0]
+		}
+	}
+	return m, nil
+}
+
+// CategoryFor returns the category for an M3U tvg-id by stripping the feed
+// suffix ("Globo.br@SD" -> "Globo.br") and looking it up.
+func CategoryFor(catmap map[string]string, tvgID string) string {
+	if tvgID == "" || catmap == nil {
+		return ""
+	}
+	id := tvgID
+	if i := strings.IndexByte(id, '@'); i >= 0 {
+		id = id[:i]
+	}
+	return catmap[id]
+}
 
 const (
 	channelsURL  = "https://iptv-org.github.io/api/channels.json"

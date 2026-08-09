@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/resolve"
 )
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -199,7 +200,8 @@ func (m Model) launch(item channelItem) tea.Cmd {
 	p := m.players[m.playerI]
 	url := item.ch.URL
 	return func() tea.Msg {
-		return launchResultMsg{channel: name, err: p.Play(url)}
+		// Resolve YouTube and similar page URLs so vlc/ffplay can open them too.
+		return launchResultMsg{channel: name, err: p.Play(resolve.Direct(url))}
 	}
 }
 

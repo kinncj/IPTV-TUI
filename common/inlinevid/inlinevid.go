@@ -133,7 +133,7 @@ func (s *Stream) Next() (Frame, error) {
 	}
 	if s.mode == ModeKitty {
 		return Frame{
-			Prelude: kittyTransmit(s.buf, s.w, s.h, kittyImageID),
+			Prelude: kittyTransmit(s.buf, s.w, s.h, s.cols, s.rows, kittyImageID),
 			Rows:    kittyPlaceholders(s.cols, s.rows, kittyImageID),
 		}, nil
 	}

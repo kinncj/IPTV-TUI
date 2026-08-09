@@ -40,7 +40,7 @@ func main() {
 	exportDir := flag.String("export", "", "rebuild playlists from source into DIR (all.m3u + countries/) and exit")
 	theme := flag.String("theme", "", "color theme: auto|"+strings.Join(tui.ThemeNames(), "|"))
 	listThemes := flag.Bool("themes", false, "list available themes and exit")
-	apiFlag := flag.Bool("api", true, "ingest the built-in iptv-org source from its JSON API (categories, stable IDs); -api=false for plain M3U")
+	apiFlag := flag.Bool("api", false, "group iptv-org by channel origin country from the JSON API instead of the playlist's availability country")
 	probeConc := flag.Int("probe-concurrency", 12, "max concurrent reachability probes")
 	probeTimeout := flag.Duration("probe-timeout", 6*time.Second, "per-probe timeout")
 	probeAll := flag.Bool("probe-all", false, "probe every channel in the background at startup")
@@ -242,6 +242,17 @@ func assembleCatalog(m3uSources []source.Source, cacheDir string, refresh, api b
 			}
 		} else {
 			channels = append(channels, apiCh...)
+		}
+	}
+
+	// Enrich channels with categories from the iptv-org API (matched by tvg-id),
+	// keeping the playlist's country grouping. Best effort: no categories if the
+	// fetch fails, which never blocks playback.
+	if catmap, err := iptvorg.Categories(loader, refresh); err == nil {
+		for i := range channels {
+			if channels[i].Category == "" {
+				channels[i].Category = iptvorg.CategoryFor(catmap, channels[i].TvgID)
+			}
 		}
 	}
 

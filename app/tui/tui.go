@@ -127,6 +127,12 @@ type epgLoadedMsg struct {
 	err   error
 }
 
+type playResolvedMsg struct {
+	url     string
+	backend string
+	title   string
+}
+
 type vidFrameMsg struct {
 	prelude string
 	rows    []string
@@ -395,6 +401,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.guideGroup = msg.group
 		}
 		return m, nil
+
+	case playResolvedMsg:
+		if m.toast == "resolving stream…" {
+			m.toast = ""
+		}
+		if msg.backend == "builtin" {
+			m.vidURL = msg.url
+			return m.startInline()
+		}
+		// mpv modal on its own screen.
+		name := msg.title
+		cmd := player.TerminalCmd(msg.url, m.termVO, name)
+		return m, tea.ExecProcess(cmd, func(err error) tea.Msg {
+			return termDoneMsg{channel: name, err: err}
+		})
 
 	case vidFrameMsg:
 		if m.vid == nil || msg.gen != m.vidGen {
