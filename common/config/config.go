@@ -21,7 +21,8 @@ type Source struct {
 type Config struct {
 	Theme   string   `json:"theme,omitempty"`
 	Player  string   `json:"player,omitempty"`
-	API     bool     `json:"api,omitempty"` // ingest built-in iptv-org from its JSON API
+	API     bool     `json:"api,omitempty"`     // ingest built-in iptv-org from its JSON API
+	EPGURL  string   `json:"epg_url,omitempty"` // custom XMLTV guide URL
 	Sources []Source `json:"sources,omitempty"`
 }
 
@@ -149,6 +150,9 @@ func (c *Config) merge(o Config) {
 	}
 	if o.API {
 		c.API = true
+	}
+	if o.EPGURL != "" {
+		c.EPGURL = o.EPGURL
 	}
 	for _, s := range o.Sources {
 		if s.URL != "" {

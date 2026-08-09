@@ -201,7 +201,11 @@ func (m Model) launch(item channelItem) tea.Cmd {
 	url := item.ch.URL
 	return func() tea.Msg {
 		// Resolve YouTube and similar page URLs so vlc/ffplay can open them too.
-		return launchResultMsg{channel: name, err: p.Play(resolve.Direct(url))}
+		direct, err := resolve.Direct(url)
+		if err != nil {
+			return launchResultMsg{channel: name, err: err}
+		}
+		return launchResultMsg{channel: name, err: p.Play(direct)}
 	}
 }
 

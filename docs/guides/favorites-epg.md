@@ -23,17 +23,27 @@ them.
 ## Program guide (EPG)
 
 The detail card shows the current and next programme for a channel when guide
-data is available. When you open a country that has a known guide, the app fetches
-its XMLTV data in the background and matches it to channels by their tvg-id.
+data is available. When you open a country with a known guide, the app fetches
+its XMLTV data in the background and matches it to channels, first by tvg-id and,
+failing that, by a normalized channel name (so guides that use a different id
+scheme still match).
 
-Notes and limits:
+Coverage depends on the guide source:
 
-- Coverage is per country and best-effort. Guides come from a public XMLTV source
-  (epgshare01), and not every country or channel has data.
-- A very large country guide is skipped rather than blocking the interface.
-- Matching depends on tvg-id. API mode (`iptv-tui -api`) gives channels stable
-  iptv-org IDs, which can improve matching for some sources.
+- By default, guides come from a public XMLTV source (epgshare01), per country.
+  It uses its own channel ids and lineups, so it matches some channels and misses
+  others. When it matches, you get real now/next; when it doesn't, the lines are
+  simply absent.
+- For accurate, full coverage, point at a guide whose channel ids line up with
+  the playlists. Set `epg_url` in `~/.config/iptv-tui/config.json` to a single
+  XMLTV file (`.xml` or `.xml.gz`). The natural fit is a self-hosted
+  [iptv-org/epg](https://github.com/iptv-org/epg) guide, whose ids match the
+  iptv-org tvg-ids exactly.
 
-If a channel shows no guide, either its country has no published guide, its
-tvg-id does not match, or the fetch was skipped for size. The channel still plays;
-only the now/next lines are absent.
+```json
+{ "epg_url": "https://your-host/guide.xml.gz" }
+```
+
+A very large guide is skipped rather than blocking the interface. If a channel
+shows no guide, either the source has no data for it or the ids and names do not
+match. The channel still plays; only the now/next lines are absent.

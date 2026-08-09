@@ -6,6 +6,7 @@ package resolve
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 	"strings"
 	"time"
@@ -30,31 +31,49 @@ func tool() string {
 	return ""
 }
 
-// Direct returns a directly-playable stream URL for url. If url does not need
-// resolving, or no resolver is installed, or resolution fails, the original url
-// is returned unchanged, so callers can always use the result.
-func Direct(url string) string {
+// Direct returns a directly-playable stream URL for url. When url does not need
+// resolving it is returned unchanged with a nil error. When it does need
+// resolving and that fails, the original url is returned together with an error
+// describing why, so the caller can both fall back and tell the user.
+func Direct(url string) (string, error) {
 	if !Needed(url) {
-		return url
+		return url, nil
 	}
 	bin := tool()
 	if bin == "" {
-		return url
+		return url, errors.New("install yt-dlp to play YouTube channels")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 
 	// -f b selects a single muxed stream (audio+video in one URL), which the
 	// single-URL players can open; -g prints the resolved URL. For live channels
-	// this is the HLS manifest.
-	out, err := exec.CommandContext(ctx, bin, "-q", "--no-warnings", "-f", "b", "-g", url).Output()
+	// this is the HLS manifest. --geo-bypass spoofs the country via
+	// X-Forwarded-For, which frees some geo-blocked streams with no VPN; it does
+	// nothing for stricter blocks, but never hurts.
+	cmd := exec.CommandContext(ctx, bin, "--no-warnings", "--geo-bypass", "-f", "b", "-g", url)
+	out, err := cmd.Output()
 	if err != nil {
-		return url
+		return url, resolveError(err)
 	}
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		if s := strings.TrimSpace(line); s != "" {
-			return s
+			return s, nil
 		}
 	}
-	return url
+	return url, errors.New("resolver returned no stream URL")
+}
+
+// resolveError extracts a short reason from yt-dlp's stderr when available.
+func resolveError(err error) error {
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
+		for _, line := range strings.Split(string(ee.Stderr), "\n") {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "ERROR:") {
+				return errors.New(strings.TrimSpace(strings.TrimPrefix(line, "ERROR:")))
+			}
+		}
+	}
+	return err
 }

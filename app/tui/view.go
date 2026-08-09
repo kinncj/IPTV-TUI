@@ -157,8 +157,8 @@ func (m Model) detailPane() string {
 	}
 
 	info := detailInfo{favorite: sel.favorite()}
-	if m.guide != nil && sel.ch.TvgID != "" {
-		now, next := m.guide.NowNext(sel.ch.TvgID, time.Now())
+	if m.guide != nil {
+		now, next := m.guide.NowNext(sel.ch.TvgID, sel.ch.Name, time.Now())
 		if now != nil {
 			info.epgNow = now.Title + "  (until " + now.Stop.Local().Format("15:04") + ")"
 		}

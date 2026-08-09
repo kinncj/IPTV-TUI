@@ -78,7 +78,8 @@ func (m Model) playWith(key string) (tea.Model, tea.Cmd) {
 	}
 	url, backend, title := m.vidURL, key, m.vidTitle
 	return m, tea.Batch(m.animate(), func() tea.Msg {
-		return playResolvedMsg{url: resolve.Direct(url), backend: backend, title: title}
+		direct, err := resolve.Direct(url)
+		return playResolvedMsg{url: direct, backend: backend, title: title, err: err}
 	})
 }
 

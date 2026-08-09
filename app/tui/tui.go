@@ -61,6 +61,7 @@ type Model struct {
 	reload     func() (catalog.Catalog, error)
 	guide      *epg.Guide
 	guideGroup string
+	epgURL     string // optional custom XMLTV guide (config)
 
 	// in-TUI source manager
 	builtins  []SourceInfo
@@ -131,6 +132,7 @@ type playResolvedMsg struct {
 	url     string
 	backend string
 	title   string
+	err     error
 }
 
 type vidFrameMsg struct {
@@ -281,6 +283,13 @@ func (m Model) WithInlineMode(mode string) Model {
 	return m
 }
 
+// WithEPGURL sets an optional custom XMLTV guide URL used for every country
+// (the way to point at a self-hosted iptv-org/epg guide with matching ids).
+func (m Model) WithEPGURL(url string) Model {
+	m.epgURL = url
+	return m
+}
+
 // refreshGroups rebuilds the group list: synthetic Favorites/Recent first, then
 // the catalog's countries.
 func (m *Model) refreshGroups() {
@@ -403,6 +412,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case playResolvedMsg:
+		if msg.err != nil {
+			m.toast = "can't play: " + truncate(msg.err.Error(), 60)
+			m.toastTTL = 48
+			return m, m.animate()
+		}
 		if m.toast == "resolving stream…" {
 			m.toast = ""
 		}
@@ -475,22 +489,27 @@ func (m Model) probeGroup(g catalog.Group) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-// loadGuide fetches the EPG for a group (if supported), bounded to its channels.
+// loadGuide fetches the EPG for a group (if supported), bounded to its channels
+// by both tvg-id and normalized name.
 func (m Model) loadGuide(g catalog.Group) tea.Cmd {
-	if !epg.Supported(g.Name) {
+	if !epg.Supported(g.Name, m.epgURL) {
 		return nil
 	}
-	wanted := make(map[string]bool, len(g.Channels))
+	ids := make(map[string]bool, len(g.Channels))
+	names := make(map[string]bool, len(g.Channels))
 	for _, ch := range g.Channels {
 		if ch.TvgID != "" {
-			wanted[ch.TvgID] = true
+			ids[ch.TvgID] = true
+		}
+		if ch.Name != "" {
+			names[epg.NameKey(ch.Name)] = true
 		}
 	}
-	name := g.Name
+	name, url := g.Name, m.epgURL
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		guide, err := epg.Load(ctx, name, wanted)
+		guide, err := epg.Load(ctx, name, url, ids, names)
 		return epgLoadedMsg{group: name, guide: guide, err: err}
 	}
 }

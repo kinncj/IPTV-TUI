@@ -152,6 +152,7 @@ func main() {
 		WithProbe(*probeConc, *probeTimeout).
 		WithProbeAll(*probeAll).
 		WithInlineMode(renderMode).
+		WithEPGURL(cfg.EPGURL).
 		WithReload(reload).
 		WithSources(builtinSources(useAPI))
 

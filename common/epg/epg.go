@@ -1,6 +1,12 @@
-// Package epg fetches and parses XMLTV program guides (from epgshare01) and
-// answers now/next queries by channel id. It is optional and best-effort: any
-// failure yields no guide rather than an error the user must act on.
+// Package epg fetches and parses XMLTV program guides and answers now/next
+// queries. It matches channels by their guide id and, failing that, by a
+// normalized channel name, so it works with guides that use different id
+// schemes. It is optional and best-effort: any failure yields no guide rather
+// than an error the user must act on.
+//
+// Guide source: a country's file from epgshare01 by default, or a single custom
+// XMLTV URL (config "epg_url"), which is the way to point at a self-hosted
+// iptv-org/epg guide whose ids line up with the playlists.
 package epg
 
 import (
@@ -11,20 +17,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 )
 
 const base = "https://epgshare01.online/epgshare01/"
 
-// maxBytes skips guides too large to fetch responsively (e.g. the ~59MB US
-// file); those countries simply show no EPG rather than freezing the UI.
-const maxBytes = 40 << 20
+// maxBytes skips guides too large to fetch responsively.
+const maxBytes = 60 << 20
 
 // ErrTooLarge means the guide exceeded maxBytes and was skipped.
 var ErrTooLarge = errors.New("epg guide too large")
 
 // countryFile maps an iptv-org country (group) name to its epgshare01 filename.
-// Extend freely; unknown countries just have no guide.
 var countryFile = map[string]string{
 	"United Kingdom": "epg_ripper_UK1.xml.gz",
 	"Brazil":         "epg_ripper_BR1.xml.gz",
@@ -42,8 +48,15 @@ var countryFile = map[string]string{
 	"Argentina":      "epg_ripper_AR1.xml.gz",
 }
 
-// Supported reports whether a country has a known guide file.
-func Supported(country string) bool { _, ok := countryFile[country]; return ok }
+// Supported reports whether a guide can be loaded for country (a per-country
+// file exists, or a custom URL is provided).
+func Supported(country, customURL string) bool {
+	if customURL != "" {
+		return true
+	}
+	_, ok := countryFile[country]
+	return ok
+}
 
 // Programme is a single scheduled show.
 type Programme struct {
@@ -51,17 +64,37 @@ type Programme struct {
 	Title       string
 }
 
-// Guide indexes programmes by channel id.
+// Guide indexes programmes by channel id and maps normalized channel names to
+// ids, so a lookup can fall back from id to name.
 type Guide struct {
 	byChannel map[string][]Programme
+	nameToID  map[string]string
 }
 
-// NowNext returns the currently-airing and next programmes for channelID.
-func (g *Guide) NowNext(channelID string, now time.Time) (current, next *Programme) {
+// NowNext returns the currently-airing and next programmes for a channel,
+// matched by id first and by normalized name second.
+func (g *Guide) NowNext(id, name string, now time.Time) (current, next *Programme) {
 	if g == nil {
 		return nil, nil
 	}
-	ps := g.byChannel[channelID]
+	ps := g.byChannel[id]
+	if len(ps) == 0 && name != "" {
+		key := normalize(name)
+		if cid, ok := g.nameToID[key]; ok {
+			ps = g.byChannel[cid]
+		} else if len(key) >= 3 {
+			// Fall back to a suffix match, which handles guides that prefix the
+			// name (epgshare01 uses "<city>/<uf> <name>") without the false hits
+			// a plain substring match would cause. Prefer the shortest fit.
+			bestLen := 1 << 30
+			for gname, cid := range g.nameToID {
+				if strings.HasSuffix(gname, key) && len(gname) < bestLen {
+					ps = g.byChannel[cid]
+					bestLen = len(gname)
+				}
+			}
+		}
+	}
 	for i := range ps {
 		p := &ps[i]
 		switch {
@@ -76,15 +109,19 @@ func (g *Guide) NowNext(channelID string, now time.Time) (current, next *Program
 	return current, next
 }
 
-// Load fetches and parses the guide for country, keeping only programmes whose
-// channel id is in `wanted` (bounding memory to the current country's channels).
-func Load(ctx context.Context, country string, wanted map[string]bool) (*Guide, error) {
-	file, ok := countryFile[country]
-	if !ok {
-		return nil, nil // no guide for this country; not an error
+// Load fetches and parses a guide for country (or customURL when set), keeping
+// programmes whose channel matches a wanted id or a wanted normalized name.
+func Load(ctx context.Context, country, customURL string, wantIDs, wantNames map[string]bool) (*Guide, error) {
+	url := customURL
+	if url == "" {
+		file, ok := countryFile[country]
+		if !ok {
+			return nil, nil // no guide for this country; not an error
+		}
+		url = base + file
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+file, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -94,23 +131,32 @@ func Load(ctx context.Context, country string, wanted map[string]bool) (*Guide, 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("epg %s: status %d", file, resp.StatusCode)
+		return nil, fmt.Errorf("epg: status %d", resp.StatusCode)
 	}
 	if resp.ContentLength > maxBytes {
 		return nil, ErrTooLarge
 	}
 
-	gz, err := gzip.NewReader(io.LimitReader(resp.Body, maxBytes))
-	if err != nil {
-		return nil, err
+	var r io.Reader = io.LimitReader(resp.Body, maxBytes)
+	if strings.HasSuffix(url, ".gz") {
+		gz, err := gzip.NewReader(r)
+		if err != nil {
+			return nil, err
+		}
+		defer gz.Close()
+		r = gz
 	}
-	defer gz.Close()
-
-	return parse(gz, wanted)
+	return parse(r, wantIDs, wantNames)
 }
 
-// parse streams an XMLTV document, collecting programmes for wanted channels.
-func parse(r io.Reader, wanted map[string]bool) (*Guide, error) {
+// parse streams an XMLTV document. It reads channel display-names first (they
+// precede programmes), then keeps programmes for channels matching a wanted id
+// or name.
+func parse(r io.Reader, wantIDs, wantNames map[string]bool) (*Guide, error) {
+	type xmlChannel struct {
+		ID    string   `xml:"id,attr"`
+		Names []string `xml:"display-name"`
+	}
 	type xmlProgramme struct {
 		Start   string `xml:"start,attr"`
 		Stop    string `xml:"stop,attr"`
@@ -118,7 +164,9 @@ func parse(r io.Reader, wanted map[string]bool) (*Guide, error) {
 		Title   string `xml:"title"`
 	}
 
-	g := &Guide{byChannel: map[string][]Programme{}}
+	g := &Guide{byChannel: map[string][]Programme{}, nameToID: map[string]string{}}
+	keep := map[string]bool{} // channel ids whose programmes we retain
+
 	dec := xml.NewDecoder(r)
 	for {
 		tok, err := dec.Token()
@@ -129,26 +177,82 @@ func parse(r io.Reader, wanted map[string]bool) (*Guide, error) {
 			return g, err
 		}
 		se, ok := tok.(xml.StartElement)
-		if !ok || se.Name.Local != "programme" {
+		if !ok {
 			continue
 		}
-		var xp xmlProgramme
-		if err := dec.DecodeElement(&xp, &se); err != nil {
-			continue
+		switch se.Name.Local {
+		case "channel":
+			var c xmlChannel
+			if dec.DecodeElement(&c, &se) != nil {
+				continue
+			}
+			wanted := wantIDs[c.ID]
+			for _, n := range c.Names {
+				nn := normalize(n)
+				if nn == "" {
+					continue
+				}
+				if _, exists := g.nameToID[nn]; !exists {
+					g.nameToID[nn] = c.ID
+				}
+				if wantNames[nn] {
+					wanted = true
+				}
+				// Suffix match: a guide name that ends with a wanted name (the
+				// epgshare01 "<city>/<uf> <name>" case).
+				if !wanted {
+					for wk := range wantNames {
+						if len(wk) >= 3 && strings.HasSuffix(nn, wk) {
+							wanted = true
+							break
+						}
+					}
+				}
+			}
+			if wanted {
+				keep[c.ID] = true
+			}
+		case "programme":
+			var xp xmlProgramme
+			if dec.DecodeElement(&xp, &se) != nil {
+				continue
+			}
+			if len(wantIDs) > 0 || len(wantNames) > 0 {
+				if !keep[xp.Channel] && !wantIDs[xp.Channel] {
+					continue
+				}
+			}
+			start, err1 := parseTime(xp.Start)
+			stop, err2 := parseTime(xp.Stop)
+			if err1 != nil || err2 != nil {
+				continue
+			}
+			g.byChannel[xp.Channel] = append(g.byChannel[xp.Channel], Programme{
+				Start: start, Stop: stop, Title: xp.Title,
+			})
 		}
-		if len(wanted) > 0 && !wanted[xp.Channel] {
-			continue
-		}
-		start, err1 := parseTime(xp.Start)
-		stop, err2 := parseTime(xp.Stop)
-		if err1 != nil || err2 != nil {
-			continue
-		}
-		g.byChannel[xp.Channel] = append(g.byChannel[xp.Channel], Programme{
-			Start: start, Stop: stop, Title: xp.Title,
-		})
 	}
 	return g, nil
+}
+
+var (
+	parenRe  = regexp.MustCompile(`[\(\[].*?[\)\]]`)
+	nonAlnum = regexp.MustCompile(`[^a-z0-9]+`)
+	qualRe   = regexp.MustCompile(`\b(hd|fhd|uhd|sd|4k|8k|hevc|h265|h264)\b`)
+)
+
+// NameKey is the exported normalized name key, so callers build the same keys
+// used for matching.
+func NameKey(s string) string { return normalize(s) }
+
+// normalize reduces a channel name to a comparable key: lowercase, without
+// parenthetical notes, quality tags, or punctuation.
+func normalize(s string) string {
+	s = strings.ToLower(s)
+	s = parenRe.ReplaceAllString(s, " ")
+	s = qualRe.ReplaceAllString(s, " ")
+	s = nonAlnum.ReplaceAllString(s, "")
+	return s
 }
 
 // parseTime parses XMLTV timestamps like "20240115120000 +0000".
