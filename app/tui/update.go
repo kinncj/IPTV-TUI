@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/kinncj/IPTV-TUI/common/catalog"
+	"github.com/kinncj/IPTV-TUI/common/player"
 )
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -161,8 +162,8 @@ func (m Model) playHere() (tea.Model, tea.Cmd) {
 	}
 	m.recordRecent(sel.ch)
 	name := sel.ch.Name
-	modal := &playerModal{title: name, url: sel.ch.URL, vo: m.termVO, w: m.width, h: m.height}
-	return m, tea.Exec(modal, func(err error) tea.Msg {
+	cmd := player.TerminalCmd(sel.ch.URL, m.termVO, name)
+	return m, tea.ExecProcess(cmd, func(err error) tea.Msg {
 		return termDoneMsg{channel: name, err: err}
 	})
 }
