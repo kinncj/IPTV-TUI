@@ -44,8 +44,16 @@ Per-probe timeout (default 6s).
 Probe every channel in the background at startup.
 .TP
 .B \-vo \fIkitty|sixel|tct\fR
-Force the inline video output. Useful over SSH or tmux, where the default
+Force the mpv inline video output. Useful over SSH or tmux, where the default
 auto-detection cannot see your local terminal.
+.TP
+.B \-inline \fIauto|kitty|halfblock\fR
+Renderer for the built-in inline player: kitty graphics (sharp) where supported,
+or truecolor half-blocks. Default auto-detects.
+.TP
+.B \-api\fR[=false]
+Ingest the iptv-org source from its JSON API for categories and stable IDs
+(default). Use \fB\-api=false\fR for plain M3U.
 .TP
 .B \-cache \fIDIR\fR
 Override the playlist cache directory.
@@ -88,13 +96,13 @@ Toggle the help overlay.
 Quit.
 .SH FILES
 .TP
-.I ~/.config/iptv/config.json
+.I ~/.config/iptv-tui/config.json
 Optional user configuration: theme, player, api, and extra sources.
 .TP
 .I ./iptv.local.json
 Optional repo-local configuration (gitignored).
 .TP
-.I $XDG_CACHE_HOME/iptv/
+.I $XDG_CACHE_HOME/iptv-tui/
 Cached playlists and persisted favorites/last-played (state.json).
 .SH SEE ALSO
 .BR mpv (1),

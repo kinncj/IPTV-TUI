@@ -124,8 +124,16 @@ func (m Model) newStream() (tea.Model, tea.Cmd) {
 		m.vid.Close()
 		m.vid = nil
 	}
+	mode := m.inlineMode
+	if mode == "" {
+		mode = inlinevid.ModeHalfBlock
+	}
+	fps := 15
+	if mode == inlinevid.ModeKitty {
+		fps = 12 // graphics frames are heavier; ease the bandwidth
+	}
 	cols, rows := m.videoCells()
-	s, err := inlinevid.Open(m.vidURL, cols, rows, 15)
+	s, err := inlinevid.Open(m.vidURL, cols, rows, fps, mode)
 	if err != nil {
 		m.closeVid()
 		m.toast = "could not start ffmpeg"
@@ -134,6 +142,7 @@ func (m Model) newStream() (tea.Model, tea.Cmd) {
 	}
 	m.vid = s
 	m.vidRows = nil
+	m.vidPrelude = ""
 	m.vidGen++
 	return m, m.nextVidFrame()
 }
@@ -160,11 +169,11 @@ func (m Model) nextVidFrame() tea.Cmd {
 	s := m.vid
 	gen := m.vidGen
 	return func() tea.Msg {
-		rows, err := s.Frame()
+		f, err := s.Next()
 		if err != nil {
 			return vidEndMsg{err: err, gen: gen}
 		}
-		return vidFrameMsg{rows: rows, gen: gen}
+		return vidFrameMsg{prelude: f.Prelude, rows: f.Rows, gen: gen}
 	}
 }
 
@@ -175,7 +184,30 @@ func (m *Model) closeVid() {
 	}
 	m.vidGen++ // invalidate any in-flight frame
 	m.vidRows = nil
+	m.vidPrelude = ""
 	m.vidFull = false
+}
+
+// kittyPlaceholder is U+10EEEE, the kitty unicode graphics placeholder. Rows of
+// these have a visible width of one cell each, which lipgloss cannot measure, so
+// vwidth counts them explicitly.
+const kittyPlaceholder = "\U0010EEEE"
+
+func vwidth(s string) int {
+	if n := strings.Count(s, kittyPlaceholder); n > 0 {
+		return n
+	}
+	return lipgloss.Width(s)
+}
+
+func centerTo(s string, w int) string {
+	sw := lipgloss.Width(s)
+	if sw >= w {
+		return s
+	}
+	left := (w - sw) / 2
+	pad := lipgloss.NewStyle().Background(cBg)
+	return pad.Render(strings.Repeat(" ", left)) + s + pad.Render(strings.Repeat(" ", w-sw-left))
 }
 
 func (m Model) handleVideoKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -196,6 +228,27 @@ func (m Model) handleVideoKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) videoView() string {
 	base := m.channelsView()
 
+	sizeLabel := "fullscreen"
+	if m.vidFull {
+		sizeLabel = "modal"
+	}
+	titleStyle := lipgloss.NewStyle().Foreground(cPurple).Background(cBg).Bold(true)
+	title := titleStyle.Render(glPlay() + " " + truncate(m.vidTitle, max(10, m.width/2)))
+	controls := lipgloss.NewStyle().Foreground(cMuted).Background(cBg).
+		Render("f " + sizeLabel + "   ·   esc back   ·   q quit")
+
+	// Kitty graphics: the placeholder rows carry the image; do not wrap them in
+	// a lipgloss border (it cannot measure them). Prepend the image transmit.
+	if m.inlineMode == inlinevid.ModeKitty && len(m.vidRows) > 0 {
+		vcols := vwidth(m.vidRows[0])
+		lines := make([]string, 0, len(m.vidRows)+2)
+		lines = append(lines, centerTo(title, vcols))
+		lines = append(lines, m.vidRows...)
+		lines = append(lines, centerTo(controls, vcols))
+		block := strings.Join(lines, "\n")
+		return m.vidPrelude + overlayCenter(base, block, m.width, m.height)
+	}
+
 	body := strings.Join(m.vidRows, "\n")
 	if len(m.vidRows) == 0 {
 		body = lipgloss.NewStyle().Foreground(cMuted).Background(cBg).Render("buffering…")
@@ -203,23 +256,14 @@ func (m Model) videoView() string {
 	box := lipgloss.NewStyle().
 		Border(modalBorder()).BorderForeground(cPurple).BorderBackground(cBg).
 		Background(cBg).Render(body)
-
-	sizeLabel := "fullscreen"
-	if m.vidFull {
-		sizeLabel = "modal"
-	}
-	title := lipgloss.NewStyle().Foreground(cPurple).Background(cBg).Bold(true).
-		Render(glPlay() + " " + truncate(m.vidTitle, max(10, m.width/2)))
-	controls := lipgloss.NewStyle().Foreground(cMuted).Background(cBg).
-		Render("f " + sizeLabel + "   ·   esc back   ·   q quit")
-
 	block := lipgloss.JoinVertical(lipgloss.Center, title, box, controls)
 	return overlayCenter(base, block, m.width, m.height)
 }
 
 // overlayCenter replaces the vertically-centered band of `base` with `over`,
-// each line padded to full width so the box sits centered. Rows above and below
-// keep showing the base (the live list).
+// each line padded to full width so it sits centered. Rows above and below keep
+// showing the base (the live list). Widths are measured with vwidth so kitty
+// placeholder rows are handled.
 func overlayCenter(base, over string, width, height int) string {
 	baseLines := strings.Split(base, "\n")
 	for len(baseLines) < height {
@@ -241,7 +285,7 @@ func overlayCenter(base, over string, width, height int) string {
 		if row < 0 || row >= height {
 			continue
 		}
-		ow := lipgloss.Width(ol)
+		ow := vwidth(ol)
 		left := (width - ow) / 2
 		baseLines[row] = pad(left) + ol + pad(width-left-ow)
 	}

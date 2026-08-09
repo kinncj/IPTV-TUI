@@ -7,7 +7,7 @@ top of the upstream lists, or to pin a theme, player, or API mode.
 
 | Path | Scope | Tracked? |
 |------|-------|----------|
-| `$XDG_CONFIG_HOME/iptv/config.json` (usually `~/.config/iptv/config.json`) | per user | n/a |
+| `$XDG_CONFIG_HOME/iptv-tui/config.json` (usually `~/.config/iptv-tui/config.json`) | per user | n/a |
 | `./iptv.local.json` | this repo | gitignored |
 
 Later files win for scalar settings (`theme`, `player`, `api`). The `sources`
@@ -52,4 +52,4 @@ IPTV_THEME=nord iptv         # environment, if no flag
 
 You can add and remove sources from inside the app. Press `s` in the group list
 to open the sources manager, then `a` to add a URL or `d` to remove one you
-added. Additions are written to `iptv.local.json` for you.
+added. Additions are written to `~/.config/iptv-tui/config.json` for you.

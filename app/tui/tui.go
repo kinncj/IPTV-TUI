@@ -76,15 +76,17 @@ type Model struct {
 	byCategoryOn bool
 
 	// terminal-player chooser + built-in inline video
-	picking  bool
-	pickIdx  int
-	pickOpts []playerOption
-	vid      *inlinevid.Stream
-	vidRows  []string
-	vidTitle string
-	vidURL   string
-	vidFull  bool
-	vidGen   int // invalidates frames from a superseded stream (resize/close)
+	picking    bool
+	pickIdx    int
+	pickOpts   []playerOption
+	vid        *inlinevid.Stream
+	vidRows    []string
+	vidPrelude string // kitty image-transmit escape emitted before the grid
+	vidTitle   string
+	vidURL     string
+	vidFull    bool
+	vidGen     int    // invalidates frames from a superseded stream (resize/close)
+	inlineMode string // inlinevid.ModeHalfBlock or ModeKitty
 
 	// animation + transient notifications
 	frame     int
@@ -126,8 +128,9 @@ type epgLoadedMsg struct {
 }
 
 type vidFrameMsg struct {
-	rows []string
-	gen  int
+	prelude string
+	rows    []string
+	gen     int
 }
 type vidEndMsg struct {
 	err error
@@ -199,7 +202,7 @@ func New(cat catalog.Catalog, players []player.Player) Model {
 		groups:    newList(nil),
 		channels:  newList(nil),
 		state:     viewHome,
-		localPath: config.LocalPath(),
+		localPath: config.UserPath(), // writes go to the OS config dir
 		srcInput:  in,
 	}
 	if len(players) == 0 {
@@ -262,6 +265,13 @@ func (m Model) WithProbe(concurrency int, timeout time.Duration) Model {
 // WithProbeAll enables a background sweep that probes every channel at startup.
 func (m Model) WithProbeAll(on bool) Model {
 	m.probeAll = on
+	return m
+}
+
+// WithInlineMode sets the built-in inline video renderer (inlinevid.ModeKitty
+// for sharp graphics, or ModeHalfBlock).
+func (m Model) WithInlineMode(mode string) Model {
+	m.inlineMode = mode
 	return m
 }
 
@@ -391,6 +401,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil // stale frame from a superseded stream
 		}
 		m.vidRows = msg.rows
+		m.vidPrelude = msg.prelude
 		return m, m.nextVidFrame()
 
 	case vidEndMsg:

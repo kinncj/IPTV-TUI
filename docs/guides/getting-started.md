@@ -54,8 +54,13 @@ Press `?` at any time for the full keybindings.
 
 ## Where things are stored
 
-- Cached playlists and your favorites and history live under the cache directory
-  (`$XDG_CACHE_HOME/iptv`, usually `~/.cache/iptv`).
-- Optional config lives at `~/.config/iptv/config.json` or `./iptv.local.json`.
+Everything you can change lives in the OS config directory, so a downloaded
+binary needs no repo:
+
+- Config and your added sources: `~/.config/iptv-tui/config.json`
+- Favorites and last-played: `~/.config/iptv-tui/state.json`
+
+Cached playlists (re-fetched from source) live separately under
+`~/.cache/iptv-tui/` and are safe to delete.
 
 See [sources and config](sources.md) for how to add your own lists.

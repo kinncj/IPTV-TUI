@@ -24,12 +24,19 @@ shows a short banner with the channel name and controls.
 
 ### built-in (in the TUI)
 
-Renders the video with the app itself, as truecolor half-block characters, so it
-draws in a modal with the channel list still visible above and below it. It needs
-ffmpeg, which decodes the video (frames come to the app) and plays the audio.
+Renders the video with the app itself, in a modal with the channel list still
+visible above and below it. It needs ffmpeg, which decodes the video (frames come
+to the app) and plays the audio.
 
-The picture is blocky, at cell resolution, because each character is two vertical
-pixels. That is the trade for keeping the TUI live behind it. While it plays:
+There are two renderers, chosen automatically:
+
+- On terminals with the kitty graphics protocol (Ghostty, kitty, WezTerm) it
+  draws a real image, so the video is sharp.
+- Everywhere else it falls back to truecolor half-blocks, which is blocky (each
+  character is two vertical pixels) but works in any terminal.
+
+Force one with `-inline kitty` or `-inline halfblock`, or `IPTV_INLINE`. While it
+plays:
 
 - `f` toggles between the modal size and nearly-full.
 - `esc` closes the player and returns to the browser.

@@ -17,6 +17,26 @@ import (
 	"strings"
 )
 
+// Render modes for the inline player.
+const (
+	ModeHalfBlock = "halfblock" // truecolor ▀ cells, works anywhere
+	ModeKitty     = "kitty"     // kitty graphics protocol, sharp, Ghostty/kitty/WezTerm
+)
+
+// kittyImageID is the graphics id used for the (single) video placement.
+const kittyImageID = 42
+
+// placeholder is the kitty unicode placeholder character U+10EEEE.
+const placeholder = "\U0010EEEE"
+
+// Frame is one decoded frame ready to draw: Prelude carries any terminal
+// control bytes to emit before the grid (the kitty image transmission; empty
+// for half-block), and Rows is the cell grid.
+type Frame struct {
+	Prelude string
+	Rows    []string
+}
+
 // Available reports whether ffmpeg is installed (required to decode).
 func Available() bool { _, err := exec.LookPath("ffmpeg"); return err == nil }
 
@@ -26,20 +46,22 @@ func isHTTP(url string) bool {
 	return strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://")
 }
 
-// Stream is a running decode. Frame() blocks until the next frame is ready, so
+// Stream is a running decode. Next() blocks until the next frame is ready, so
 // reading in a loop is naturally paced to the requested frame rate.
 type Stream struct {
+	mode       string
 	cols, rows int
-	w, h       int // pixel dimensions: w = cols, h = rows*2
+	w, h       int // pixel dimensions of the decoded frame
 	video      *exec.Cmd
 	audio      *exec.Cmd
 	out        io.ReadCloser
 	buf        []byte
 }
 
-// Open starts decoding url scaled to fit cols x rows character cells at fps. It
-// also starts audio playback via mpv when available (best effort).
-func Open(url string, cols, rows, fps int) (*Stream, error) {
+// Open starts decoding url scaled to fit cols x rows character cells at fps,
+// using the given render mode (ModeHalfBlock or ModeKitty). It also starts audio
+// playback via mpv when available (best effort).
+func Open(url string, cols, rows, fps int, mode string) (*Stream, error) {
 	if cols < 2 {
 		cols = 2
 	}
@@ -49,7 +71,19 @@ func Open(url string, cols, rows, fps int) (*Stream, error) {
 	if fps < 1 {
 		fps = 15
 	}
-	w, h := cols, rows*2
+	if mode != ModeKitty {
+		mode = ModeHalfBlock
+	}
+
+	// Pixel dimensions of the decoded frame. Half-block packs two vertical
+	// pixels per cell; kitty renders a real image, so decode at a higher
+	// resolution (roughly 4x8 pixels per cell) for a sharp picture.
+	var w, h int
+	if mode == ModeKitty {
+		w, h = cols*4, rows*8
+	} else {
+		w, h = cols, rows*2
+	}
 
 	vf := fmt.Sprintf(
 		"fps=%d,scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:color=black",
@@ -77,7 +111,7 @@ func Open(url string, cols, rows, fps int) (*Stream, error) {
 		return nil, err
 	}
 
-	s := &Stream{cols: cols, rows: rows, w: w, h: h, video: video, out: out, buf: make([]byte, w*h*3)}
+	s := &Stream{mode: mode, cols: cols, rows: rows, w: w, h: h, video: video, out: out, buf: make([]byte, w*h*3)}
 
 	// Audio through mpv (no video). Best effort: a missing mpv or audio track
 	// just means a silent picture.
@@ -91,14 +125,19 @@ func Open(url string, cols, rows, fps int) (*Stream, error) {
 	return s, nil
 }
 
-// Frame reads the next frame and returns it as `rows` strings of half-block
-// cells. It blocks until the frame arrives, and returns io.EOF when the stream
-// ends.
-func (s *Stream) Frame() ([]string, error) {
+// Next reads the next frame and renders it for the stream's mode. It blocks
+// until the frame arrives, and returns io.EOF when the stream ends.
+func (s *Stream) Next() (Frame, error) {
 	if _, err := io.ReadFull(s.out, s.buf); err != nil {
-		return nil, err
+		return Frame{}, err
 	}
-	return renderHalfBlocks(s.buf, s.w, s.h, s.cols, s.rows), nil
+	if s.mode == ModeKitty {
+		return Frame{
+			Prelude: kittyTransmit(s.buf, s.w, s.h, kittyImageID),
+			Rows:    kittyPlaceholders(s.cols, s.rows, kittyImageID),
+		}, nil
+	}
+	return Frame{Rows: renderHalfBlocks(s.buf, s.w, s.h, s.cols, s.rows)}, nil
 }
 
 // Close stops decoding and audio.

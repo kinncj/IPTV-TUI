@@ -25,17 +25,33 @@ type Config struct {
 	Sources []Source `json:"sources,omitempty"`
 }
 
+// Dir is the per-user directory for user-changeable files, in the OS config
+// location (~/.config/iptv-tui on Linux, ~/Library/Application Support/iptv-tui
+// on macOS). Everything a user edits or the app persists on their behalf lives
+// here, so a downloaded binary works without a repo checkout.
+func Dir() string {
+	if d, err := os.UserConfigDir(); err == nil {
+		return filepath.Join(d, "iptv-tui")
+	}
+	return "."
+}
+
+// UserPath is the config file the app reads and writes: <Dir>/config.json.
+func UserPath() string { return filepath.Join(Dir(), "config.json") }
+
+// StatePath is where favorites and last-played persist: <Dir>/state.json.
+func StatePath() string { return filepath.Join(Dir(), "state.json") }
+
 // DefaultPaths are searched and merged in order (later files win for scalars,
 // sources are appended):
 //
-//	$XDG_CONFIG_HOME/iptv/config.json   (per-user)
-//	./iptv.local.json                   (repo-local, gitignored)
+//	<OS config dir>/iptv-tui/config.json   (per-user, where the app writes)
+//	./iptv.local.json                      (optional, gitignored, dev override)
 func DefaultPaths() []string {
-	var paths []string
-	if dir, err := os.UserConfigDir(); err == nil {
-		paths = append(paths, filepath.Join(dir, "iptv", "config.json"))
+	paths := []string{UserPath()}
+	if lp := LocalPath(); lp != paths[0] {
+		paths = append(paths, lp)
 	}
-	paths = append(paths, "iptv.local.json")
 	return paths
 }
 

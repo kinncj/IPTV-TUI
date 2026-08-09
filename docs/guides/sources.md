@@ -19,12 +19,12 @@ It lists the built-in sources (marked `built`) and your own (marked `user`).
 - `d` removes the selected user source. Built-in sources are refused.
 - `esc` goes back.
 
-Additions are written to `iptv.local.json` in the current directory (gitignored),
+Additions are written to `~/.config/iptv-tui/config.json`,
 and the catalog reloads from source so the new channels appear.
 
 You can also edit config by hand. Two files are read and merged, in this order:
 
-1. `~/.config/iptv/config.json` (per user)
+1. `~/.config/iptv-tui/config.json` (per user)
 2. `./iptv.local.json` (repo-local, gitignored)
 
 ```json

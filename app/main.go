@@ -20,6 +20,7 @@ import (
 	"github.com/kinncj/IPTV-TUI/common/catalog"
 	"github.com/kinncj/IPTV-TUI/common/config"
 	"github.com/kinncj/IPTV-TUI/common/export"
+	"github.com/kinncj/IPTV-TUI/common/inlinevid"
 	"github.com/kinncj/IPTV-TUI/common/iptvorg"
 	"github.com/kinncj/IPTV-TUI/common/m3u"
 	"github.com/kinncj/IPTV-TUI/common/player"
@@ -39,11 +40,12 @@ func main() {
 	exportDir := flag.String("export", "", "rebuild playlists from source into DIR (all.m3u + countries/) and exit")
 	theme := flag.String("theme", "", "color theme: auto|"+strings.Join(tui.ThemeNames(), "|"))
 	listThemes := flag.Bool("themes", false, "list available themes and exit")
-	apiFlag := flag.Bool("api", false, "ingest the built-in iptv-org source from its JSON API (richer metadata) instead of M3U")
+	apiFlag := flag.Bool("api", true, "ingest the built-in iptv-org source from its JSON API (categories, stable IDs); -api=false for plain M3U")
 	probeConc := flag.Int("probe-concurrency", 12, "max concurrent reachability probes")
 	probeTimeout := flag.Duration("probe-timeout", 6*time.Second, "per-probe timeout")
 	probeAll := flag.Bool("probe-all", false, "probe every channel in the background at startup")
 	voOverride := flag.String("vo", os.Getenv("IPTV_TERM_VO"), "force inline video output: kitty|sixel|tct (default: auto-detect; useful over SSH/tmux)")
+	inlineMode := flag.String("inline", envOr("IPTV_INLINE", "auto"), "built-in player renderer: auto|kitty|halfblock")
 	flag.Parse()
 
 	if *showVersion {
@@ -118,10 +120,22 @@ func main() {
 		}
 	}
 
+	// Built-in inline player renderer: kitty graphics where the terminal supports
+	// it (sharp), otherwise truecolor half-blocks. Overridable with -inline.
+	renderMode := *inlineMode
+	if renderMode == "" || renderMode == "auto" {
+		if caps.KittyGraphics {
+			renderMode = inlinevid.ModeKitty
+		} else {
+			renderMode = inlinevid.ModeHalfBlock
+		}
+	}
+
 	// Persisted favorites / last-played and a source reloader for the `R` key.
-	// The reloader honors the API choice and re-reads user config each time, so
+	// State lives in the OS config dir (user-changeable), not the cache. The
+	// reloader honors the API choice and re-reads user config each time, so
 	// sources added in the TUI show up after a reload.
-	st := state.Load(filepath.Join(*cacheDir, "state.json"))
+	st := state.Load(config.StatePath())
 	reload := func() (catalog.Catalog, error) {
 		latest, _, _ := config.Load(config.DefaultPaths()...)
 		all := mergeSources(source.Defaults(), latest.Sources)
@@ -137,6 +151,7 @@ func main() {
 		WithTerminalPlayback(termVO).
 		WithProbe(*probeConc, *probeTimeout).
 		WithProbeAll(*probeAll).
+		WithInlineMode(renderMode).
 		WithReload(reload).
 		WithSources(builtinSources(useAPI))
 
@@ -160,6 +175,14 @@ func builtinSources(api bool) []tui.SourceInfo {
 		out = append(out, info)
 	}
 	return out
+}
+
+// envOr returns the environment value for key, or def when unset/empty.
+func envOr(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }
 
 // pick returns the first non-empty value.
@@ -273,7 +296,7 @@ func comma(n int) string {
 
 func defaultCacheDir() string {
 	if d, err := os.UserCacheDir(); err == nil {
-		return filepath.Join(d, "iptv")
+		return filepath.Join(d, "iptv-tui")
 	}
-	return filepath.Join(os.TempDir(), "iptv-cache")
+	return filepath.Join(os.TempDir(), "iptv-tui-cache")
 }

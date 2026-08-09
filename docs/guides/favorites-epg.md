@@ -17,7 +17,7 @@ URL and capped, so it stays short.
 ## Where this is stored
 
 Favorites and history persist to `state.json` in the cache directory
-(`~/.cache/iptv` by default). They survive restarts. Deleting that file resets
+(`~/.config/iptv-tui` by default). They survive restarts. Deleting that file resets
 them.
 
 ## Program guide (EPG)

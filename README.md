@@ -1,5 +1,15 @@
 # IPTV TUI
 
+<p align="center">
+  <a href="https://github.com/kinncj/IPTV-TUI/releases/latest"><img alt="release" src="https://img.shields.io/github/v/release/kinncj/IPTV-TUI?color=bb9af7"></a>
+  <a href="https://github.com/kinncj/IPTV-TUI/releases"><img alt="downloads" src="https://img.shields.io/github/downloads/kinncj/IPTV-TUI/total?color=7dcfff"></a>
+  <a href="https://github.com/kinncj/IPTV-TUI/releases/latest"><img alt="downloads@latest" src="https://img.shields.io/github/downloads/kinncj/IPTV-TUI/latest/total?color=7dcfff"></a>
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-9ece6a">
+  <img alt="go" src="https://img.shields.io/badge/go-1.26-00ADD8">
+  <img alt="ui" src="https://img.shields.io/badge/ui-terminal%20(Bubble%20Tea)-bb9af7">
+  <a href="https://aur.archlinux.org/packages/iptv-tui-bin"><img alt="AUR" src="https://img.shields.io/aur/version/iptv-tui-bin?color=1793d1&label=AUR"></a>
+</p>
+
 A terminal UI to browse free IPTV playlists by country or category and play the
 channels. It probes each stream's reachability as you browse, so dead and
 geo-blocked channels are visible before you open them.
@@ -119,7 +129,7 @@ useful over SSH or tmux where auto-detection cannot see your local terminal.
 | `q` `ctrl+c`    | quit                                       |
 
 In the sources manager: `a` adds a playlist URL, `d` removes a user source, `esc`
-goes back. Added sources are written to the gitignored `iptv.local.json`, and the
+goes back. Added sources are written to `~/.config/iptv-tui/config.json`, and the
 catalog reloads from source. The built-in sources (iptv-org, Free-TV) cannot be
 removed.
 
@@ -133,7 +143,8 @@ iptv-tui -player vlc         prefer a specific player
 iptv-tui -vo tct             force the inline video output (SSH/tmux)
 iptv-tui -theme catppuccin   pick a theme (default: auto, follows OS light/dark)
 iptv-tui -themes             list themes
-iptv-tui -api                ingest the iptv-org source from its JSON API
+iptv-tui -api=false          use plain M3U for iptv-org (no categories)
+iptv-tui -inline kitty       built-in player renderer: auto|kitty|halfblock
 iptv-tui -probe-concurrency 12
 iptv-tui -probe-timeout 6s
 iptv-tui -probe-all          probe every channel in the background
@@ -143,12 +154,15 @@ iptv-tui -export DIR         rebuild all.m3u + per-country playlists, then exit
 
 ### iptv-org API mode
 
-By default the built-in iptv-org source is the country-grouped M3U. With `-api`
-(or `"api": true` in config) it comes from the iptv-org JSON API instead, which
-joins channels, streams, and countries for stable channel IDs (better EPG
-matching), proper country names, and categories. This swaps only the built-in
-iptv-org list. Free-TV and your own lists are untouched, so turning it on cannot
-break your sources.
+By default the built-in iptv-org source is ingested from the iptv-org JSON API,
+which joins channels, streams, and countries for stable channel IDs (better EPG
+matching), proper country names, and categories. Categories are what the `g`
+country/category toggle groups by, so they come from here. This affects only the
+built-in iptv-org list; Free-TV and your own lists are always plain M3U, so it
+cannot break your sources.
+
+Pass `-api=false` for the plain country-grouped M3U instead. The M3U has no
+category data, so category grouping is mostly "Uncategorized" in that mode.
 
 ## Themes and terminal support
 
@@ -168,7 +182,7 @@ Config is optional. Add your own playlists on top of the upstream lists, or pin 
 theme and player, through a gitignored file. See [docs/config.md](docs/config.md).
 
 ```json
-// ./iptv.local.json (gitignored) or ~/.config/iptv/config.json
+// ~/.config/iptv-tui/config.json  (or ./iptv.local.json for a dev override)
 { "theme": "catppuccin", "player": "mpv",
   "sources": [ { "name": "my-list", "url": "https://example.com/list.m3u8" } ] }
 ```

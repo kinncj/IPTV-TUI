@@ -105,7 +105,7 @@ func writeInputConf() string {
 	if err != nil {
 		return ""
 	}
-	d := filepath.Join(dir, "iptv")
+	d := filepath.Join(dir, "iptv-tui")
 	if err := os.MkdirAll(d, 0o755); err != nil {
 		return ""
 	}
