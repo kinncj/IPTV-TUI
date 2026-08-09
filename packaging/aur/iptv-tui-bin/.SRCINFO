@@ -1,0 +1,21 @@
+pkgbase = iptv-tui-bin
+	pkgdesc = IPTV TUI — browse free IPTV playlists (iptv-org, Free-TV) by country/category and play them (prebuilt binary)
+	pkgver = 1.3.0
+	pkgrel = 1
+	url = https://github.com/kinncj/iptv
+	arch = x86_64
+	arch = aarch64
+	license = AGPL-3.0-or-later
+	provides = iptv-tui
+	conflicts = iptv-tui
+	optdepends = mpv: inline terminal playback and best HLS support
+	optdepends = vlc: alternate external player
+	optdepends = ffmpeg: ffplay fallback player
+	source = iptv-tui_1.3.0.1::https://github.com/kinncj/iptv/releases/download/v1.3.0/iptv-tui.1
+	sha256sums = a7376141cb454aeebee8a1bee1b301d1407adbf3dc33c797fb616c22fe0a66c5
+	source_x86_64 = iptv-tui_1.3.0_x86_64::https://github.com/kinncj/iptv/releases/download/v1.3.0/iptv-tui_linux_amd64
+	sha256sums_x86_64 = d283272354001ccdcf653e8b83293230f376d0d15f72730f3e4d0d3c82acb1b7
+	source_aarch64 = iptv-tui_1.3.0_aarch64::https://github.com/kinncj/iptv/releases/download/v1.3.0/iptv-tui_linux_arm64
+	sha256sums_aarch64 = c4e183835ea19de6d88d22fa83c87a003e605b8188e4b0c29434c23c9cf56d23
+
+pkgname = iptv-tui-bin

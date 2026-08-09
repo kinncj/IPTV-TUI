@@ -1,0 +1,18 @@
+# build output
+/iptv
+/dist/
+
+# runtime cache (playlists are re-fetched from upstream)
+/data/
+*.m3u
+*.m3u8
+
+# local, user-specific config (extra sources / theme / player)
+/iptv.local.json
+
+# go
+/vendor/
+
+# editor / os
+.DS_Store
+*.swp

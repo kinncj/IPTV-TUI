@@ -1,0 +1,99 @@
+.TH IPTV-TUI 1 "2026" "iptv-tui" "User Commands"
+.SH NAME
+iptv-tui \- terminal UI to browse free IPTV playlists and play channels
+.SH SYNOPSIS
+.B iptv-tui
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B iptv-tui
+is a terminal user interface for browsing free IPTV playlists from
+iptv-org and Free-TV, grouped by country or category, with live per-stream
+reachability probing so dead or geo-blocked channels are visible before you
+open them. Channels can be played in an external window or inline in the
+terminal (via mpv), and favorites and recently played channels are remembered.
+.SH OPTIONS
+.TP
+.B \-refresh
+Force a re-download of playlists, ignoring the cache.
+.TP
+.B \-player \fImpv|vlc|ffplay\fR
+Preferred external player (default: auto-detect, mpv first).
+.TP
+.B \-theme \fINAME\fR
+Color theme; use \fB\-themes\fR to list. Default \fBauto\fR follows the
+terminal's light/dark background.
+.TP
+.B \-themes
+List available themes and exit.
+.TP
+.B \-api
+Ingest the built-in iptv-org source from its JSON API (stable IDs, categories)
+instead of M3U. Affects only that built-in source; user and Free-TV lists are
+unchanged.
+.TP
+.B \-probe-concurrency \fIN\fR
+Maximum concurrent reachability probes (default 12).
+.TP
+.B \-probe-timeout \fIDURATION\fR
+Per-probe timeout (default 6s).
+.TP
+.B \-probe-all
+Probe every channel in the background at startup.
+.TP
+.B \-cache \fIDIR\fR
+Override the playlist cache directory.
+.TP
+.B \-export \fIDIR\fR
+Rebuild all.m3u and per-country playlists from upstream into DIR, then exit.
+.SH KEYS
+.TP
+.B enter
+Open a group, or play the selected channel in a window.
+.TP
+.B t
+Play the selected channel inline in the terminal (requires mpv).
+.TP
+.B f
+Toggle favorite.
+.TP
+.B g
+Switch grouping between country and category.
+.TP
+.B s
+Open the sources manager (add/remove your own playlists).
+.TP
+.B /
+Filter the current list.
+.TP
+.B r
+Re-probe the current group.
+.TP
+.B R
+Reload playlists from source.
+.TP
+.B p
+Cycle the external player.
+.TP
+.B ?
+Toggle the help overlay.
+.TP
+.B q
+Quit.
+.SH FILES
+.TP
+.I ~/.config/iptv/config.json
+Optional user configuration: theme, player, api, and extra sources.
+.TP
+.I ./iptv.local.json
+Optional repo-local configuration (gitignored).
+.TP
+.I $XDG_CACHE_HOME/iptv/
+Cached playlists and persisted favorites/last-played (state.json).
+.SH SEE ALSO
+.BR mpv (1),
+.BR vlc (1),
+.BR ffplay (1)
+.SH AUTHOR
+Kinn Coelho Juliao <kinncj@gmail.com>
+.SH HOMEPAGE
+https://github.com/kinncj/iptv
